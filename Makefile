@@ -19,7 +19,7 @@ clean:
 	rm -rf elm-stuff/build-artifacts
 
 server:
-	yarn elm-live src/Main.elm -- --path-to-elm-make=node_modules/.bin/elm-make --output=main.js --debug
+	yarn elm-live src/Main.elm -- --path-to-elm-make=node_modules/.bin/elm-make --output=main.js --debug --host=$(shell ipconfig getifaddr en0)
 
 main.min.js : ELM_MAKE_FLAGS =
 main.min.js: main.js
