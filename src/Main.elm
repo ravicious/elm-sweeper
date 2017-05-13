@@ -2,27 +2,25 @@ module Main exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Game
 
 
-cells =
-    List.range 1 (16 * 30)
-        |> List.map
-            (\n ->
-                let
-                    power =
-                        n % 6
-                in
-                    div [ class "grid-cell" ]
-                        [ if power == 0 then
-                            text
-                                ""
-                          else
-                            text (toString power)
-                        ]
+renderCells : Game.State -> List (Html.Html msg)
+renderCells game =
+    game
+        |> Game.mapCells
+            (\( index, cellState ) ->
+                div [ class "grid-cell" ]
+                    [ text (toString cellState.power)
+                    ]
             )
 
 
 main : Html.Html msg
 main =
-    div [ class "grid grid--16x30" ]
-        cells
+    let
+        game =
+            Game.init Game.SixteenByThirty
+    in
+        div [ class "grid grid--16x30" ] <|
+            renderCells game
