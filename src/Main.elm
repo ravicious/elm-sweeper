@@ -3,6 +3,11 @@ module Main exposing (main)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Random
+
+
+-- Our imports
+
 import Game
 import Game.Variant
 import Game.Board
@@ -32,17 +37,24 @@ renderCells game =
             )
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Html.beginnerProgram
-        { model = init
+    Html.programWithFlags
+        { init = init
         , view = view
         , update = update
+        , subscriptions = \_ -> Sub.none
         }
+
+
+type alias Flags =
+    { randomNumber : Int
+    }
 
 
 type alias Model =
     { game : Game.State
+    , initialNumber : Int
     }
 
 
@@ -50,17 +62,23 @@ type Msg
     = ClickCell Game.Board.CellIndex
 
 
-init : Model
-init =
-    { game = Game.init Game.Variant.SixteenByThirty
-    }
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    let
+        seed =
+            Random.initialSeed flags.randomNumber
+    in
+        { game = Game.init Game.Variant.SixteenByThirty seed
+        , initialNumber = flags.randomNumber
+        }
+            ! []
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickCell index ->
-            { model | game = Game.update (Game.RevealCell index) model.game }
+            { model | game = Game.update (Game.RevealCell index) model.game } ! []
 
 
 view : Model -> Html.Html Msg
@@ -69,5 +87,8 @@ view model =
         game =
             Game.init Game.Variant.SixteenByThirty
     in
-        div [ class "grid grid--16x30" ] <|
-            renderCells model.game
+        div []
+            [ div [ class "grid grid--16x30" ] <|
+                renderCells model.game
+            , span [] [ text <| "Seed: " ++ (toString model.initialNumber) ]
+            ]

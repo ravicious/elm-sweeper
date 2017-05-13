@@ -1,6 +1,8 @@
 module Game.Board exposing (State, CellIndex, init, listCells, revealCell)
 
 import Dict exposing (Dict)
+import Random
+import Random.List
 import Game.Cell as Cell
 import Game.Variant as Variant exposing (Variant)
 
@@ -20,16 +22,16 @@ type alias State =
     }
 
 
-init : Variant -> State
-init variant =
+init : Variant -> Random.Seed -> State
+init variant seed =
     { rows = variant.rows
     , columns = variant.columns
-    , cells = initCells variant
+    , cells = initCells variant seed
     }
 
 
-initCells : Variant -> Cells
-initCells variant =
+initCells : Variant -> Random.Seed -> Cells
+initCells variant seed =
     let
         totalNumberOfCells =
             variant.rows * variant.columns
@@ -43,9 +45,15 @@ initCells variant =
 
         zeroCells =
             List.repeat numberOfZeroCells (Cell.init 0)
+
+        cells =
+            cellsFromConfiguration
+                ++ zeroCells
+
+        ( shuffledCells, _ ) =
+            Random.List.shuffle cells |> (flip Random.step) seed
     in
-        cellsFromConfiguration
-            ++ zeroCells
+        shuffledCells
             |> List.indexedMap (\index cell -> ( index, cell ))
             |> Dict.fromList
 

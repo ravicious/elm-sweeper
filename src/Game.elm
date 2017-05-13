@@ -1,5 +1,6 @@
 module Game exposing (State, Action(..), init, listCells, update)
 
+import Random
 import Game.Cell as Cell
 import Game.Board as Board
 import Game.Variant as Variant
@@ -14,13 +15,13 @@ type Action
     = RevealCell Board.CellIndex
 
 
-init : Variant.Identifier -> State
-init identifier =
+init : Variant.Identifier -> Random.Seed -> State
+init identifier seed =
     let
         variant =
             Variant.get identifier
     in
-        { board = Board.init variant
+        { board = Board.init variant seed
         }
 
 

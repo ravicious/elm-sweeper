@@ -12,7 +12,10 @@
     <script src="main.js"></script>
     <script>
       var node = document.getElementById('app-container')
-      var app = Elm.Main.embed(node)
+      var randomNumber = Math.floor(Math.random()*0xFFFFFFFF)
+      var app = Elm.Main.embed(node, {
+        randomNumber: randomNumber,
+      })
     </script>
   </body>
 </html>
