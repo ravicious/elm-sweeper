@@ -1,61 +1,26 @@
-module Game exposing (VariantIdentifier(..), State, init, mapCells)
+module Game exposing (State, init, listCells)
 
 import Dict exposing (Dict)
-
-
-type alias CellIndex =
-    Int
-
-
-type alias Power =
-    Int
-
-
-type alias CellState =
-    { power : Power
-    }
+import Game.Cell as Cell
+import Game.Board as Board
+import Game.Variant as Variant
 
 
 type alias State =
-    { cells : Dict CellIndex CellState
+    { board : Board.State
     }
 
 
-type VariantIdentifier
-    = SixteenByThirty
-
-
-type alias Variant =
-    { rows : Int
-    , columns : Int
-    }
-
-
-getVariant : VariantIdentifier -> Variant
-getVariant identifier =
-    case identifier of
-        SixteenByThirty ->
-            { rows = 16
-            , columns = 30
-            }
-
-
-init : VariantIdentifier -> State
-init variantIdentifier =
+init : Variant.Identifier -> State
+init identifier =
     let
         variant =
-            getVariant variantIdentifier
+            Variant.get identifier
     in
-        { cells =
-            List.range 0 ((variant.rows * variant.columns) - 1)
-                |> List.map
-                    (\cellIndex ->
-                        ( cellIndex, { power = 1 } )
-                    )
-                |> Dict.fromList
+        { board = Board.init variant
         }
 
 
-mapCells : (( CellIndex, CellState ) -> b) -> State -> List b
-mapCells f state =
-    Dict.toList state.cells |> List.map f
+listCells : (( Board.CellIndex, Cell.State ) -> b) -> State -> List b
+listCells f state =
+    Board.listCells f state.board
