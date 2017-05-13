@@ -1,4 +1,4 @@
-module Game.Board exposing (State, CellIndex, init, listCells)
+module Game.Board exposing (State, CellIndex, init, listCells, revealCell)
 
 import Dict exposing (Dict)
 import Game.Cell as Cell
@@ -33,3 +33,26 @@ init variant =
 listCells : (( CellIndex, Cell.State ) -> b) -> State -> List b
 listCells f state =
     Dict.toList state.cells |> List.map f
+
+
+revealCell : CellIndex -> State -> State
+revealCell index state =
+    let
+        cell =
+            Dict.get index state.cells
+    in
+        cell
+            |> Maybe.map
+                (\cell ->
+                    if Cell.isVisible cell then
+                        state
+                    else
+                        { state
+                            | cells =
+                                Dict.update
+                                    index
+                                    (Maybe.map Cell.reveal)
+                                    state.cells
+                        }
+                )
+            |> Maybe.withDefault state

@@ -25,3 +25,13 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+.grid-cell:hover {
+  background-color: grey;
+  cursor: pointer;
+}
+
+.grid-cell.is-visible:hover {
+  cursor: default;
+  background-color: white;
+}
