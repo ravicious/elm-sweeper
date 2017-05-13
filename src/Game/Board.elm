@@ -9,10 +9,14 @@ type alias CellIndex =
     Int
 
 
+type alias Cells =
+    Dict CellIndex Cell.State
+
+
 type alias State =
     { rows : Int
     , columns : Int
-    , cells : Dict CellIndex Cell.State
+    , cells : Cells
     }
 
 
@@ -20,14 +24,30 @@ init : Variant -> State
 init variant =
     { rows = variant.rows
     , columns = variant.columns
-    , cells =
-        List.range 0 ((variant.rows * variant.columns) - 1)
-            |> List.map
-                (\cellIndex ->
-                    ( cellIndex, (Cell.init 1) )
-                )
-            |> Dict.fromList
+    , cells = initCells variant
     }
+
+
+initCells : Variant -> Cells
+initCells variant =
+    let
+        totalNumberOfCells =
+            variant.rows * variant.columns
+
+        cellsFromConfiguration =
+            variant.cellConfiguration
+                |> List.concatMap (\( power, n ) -> List.repeat n (Cell.init power))
+
+        numberOfZeroCells =
+            totalNumberOfCells - (List.length cellsFromConfiguration)
+
+        zeroCells =
+            List.repeat numberOfZeroCells (Cell.init 0)
+    in
+        cellsFromConfiguration
+            ++ zeroCells
+            |> List.indexedMap (\index cell -> ( index, cell ))
+            |> Dict.fromList
 
 
 listCells : (( CellIndex, Cell.State ) -> b) -> State -> List b
