@@ -1,5 +1,27 @@
 body {
   font-family: sans-serif;
-  color: white;
-  background-color: black;
+  color: black;
+  background-color: white;
+}
+
+.grid {
+  display: grid;
+  justify-items: stretch;
+  width: 100%;
+  font-size: 2vw;
+}
+
+.grid--16x30 {
+  grid-template-rows: repeat(16, 16fr);
+  grid-template-columns: repeat(30, 30fr);
+  /* Make sure that we render square cells */
+  height: calc((100vw / 30) * 16);
+}
+
+.grid-cell {
+  border: 1px solid #333333;
+  font-size: 1em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
