@@ -1,12 +1,14 @@
 module Game.Cell
     exposing
-        ( State
+        ( Cell
         , init
         , setSurroundingPower
         , reveal
-        , isVisible
         , hasZeroPower
         , isMonster
+        , isRevealed
+        , power
+        , toDisplayValue
         )
 
 
@@ -14,41 +16,129 @@ type alias Power =
     Int
 
 
-type alias State =
-    { power : Power
-    , visible : Bool
+type MonsterCellDisplayedValue
+    = Power
+    | SurroundingPower
+    | None
+
+
+type alias ZeroPowerCellState =
+    { isRevealed : Bool
     , surroundingPower : Power
     }
 
 
-init : Power -> State
-init power =
-    { power = power
-    , visible = False
-    , surroundingPower = 0
+type alias MonsterCellState =
+    { surroundingPower : Power
+    , power : Power
+    , displayedValue : MonsterCellDisplayedValue
     }
 
 
-setSurroundingPower : Power -> State -> State
-setSurroundingPower surroundingPower state =
-    { state | surroundingPower = surroundingPower }
+type Cell
+    = ZeroPowerCell ZeroPowerCellState
+    | MonsterCell MonsterCellState
 
 
-reveal : State -> State
-reveal state =
-    { state | visible = True }
+init : Power -> Cell
+init power =
+    if power == 0 then
+        ZeroPowerCell
+            { isRevealed = False
+            , surroundingPower = 0
+            }
+    else
+        MonsterCell
+            { surroundingPower = 0
+            , power = power
+            , displayedValue = None
+            }
 
 
-isVisible : State -> Bool
-isVisible =
-    .visible
+setSurroundingPower : Power -> Cell -> Cell
+setSurroundingPower surroundingPower cell =
+    case cell of
+        MonsterCell state ->
+            MonsterCell { state | surroundingPower = surroundingPower }
+
+        ZeroPowerCell state ->
+            ZeroPowerCell { state | surroundingPower = surroundingPower }
 
 
-hasZeroPower : State -> Bool
-hasZeroPower =
-    .power >> ((==) 0)
+reveal : Cell -> Cell
+reveal cell =
+    case cell of
+        ZeroPowerCell state ->
+            ZeroPowerCell { state | isRevealed = True }
+
+        MonsterCell state ->
+            MonsterCell { state | displayedValue = Power }
 
 
-isMonster : State -> Bool
-isMonster =
-    not << hasZeroPower
+hasZeroPower : Cell -> Bool
+hasZeroPower cell =
+    case cell of
+        ZeroPowerCell _ ->
+            True
+
+        MonsterCell _ ->
+            False
+
+
+isMonster : Cell -> Bool
+isMonster cell =
+    case cell of
+        ZeroPowerCell _ ->
+            False
+
+        MonsterCell _ ->
+            True
+
+
+isRevealed : Cell -> Bool
+isRevealed cell =
+    case cell of
+        ZeroPowerCell state ->
+            state.isRevealed
+
+        MonsterCell state ->
+            case state.displayedValue of
+                None ->
+                    False
+
+                Power ->
+                    True
+
+                SurroundingPower ->
+                    True
+
+
+power : Cell -> Power
+power cell =
+    case cell of
+        ZeroPowerCell _ ->
+            0
+
+        MonsterCell state ->
+            state.power
+
+
+toDisplayValue : Cell -> String
+toDisplayValue cell =
+    case cell of
+        ZeroPowerCell state ->
+            if state.isRevealed then
+                toString state.surroundingPower
+            else
+                ""
+
+        MonsterCell state ->
+            case state.displayedValue of
+                None ->
+                    ""
+
+                Power ->
+                    toString state.power
+
+                SurroundingPower ->
+                    toString state.surroundingPower

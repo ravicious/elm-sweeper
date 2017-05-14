@@ -24,11 +24,11 @@ type alias CellIndex =
 
 
 type alias Cells =
-    Dict CellIndex Cell.State
+    Dict CellIndex Cell.Cell
 
 
 type alias Neighbors =
-    List Cell.State
+    List Cell.Cell
 
 
 type alias State =
@@ -91,7 +91,7 @@ initCells variant seed =
         listOfCellsToDictOfCells shuffledCells
 
 
-listOfCellsToDictOfCells : List Cell.State -> Cells
+listOfCellsToDictOfCells : List Cell.Cell -> Cells
 listOfCellsToDictOfCells =
     List.indexedMap (,) >> Dict.fromList
 
@@ -101,14 +101,14 @@ calculateSurroundingPowerOfCells state =
     { state | cells = Dict.map (calculateSurroundingPowerForCell state) state.cells }
 
 
-calculateSurroundingPowerForCell : State -> CellIndex -> Cell.State -> Cell.State
+calculateSurroundingPowerForCell : State -> CellIndex -> Cell.Cell -> Cell.Cell
 calculateSurroundingPowerForCell state index cell =
     let
         neighbors =
             getNeighbors state index
 
         surroundingPower =
-            List.foldr (\neighbor sumOfPower -> neighbor.power |> (+) sumOfPower)
+            List.foldr (\neighbor sumOfPower -> Cell.power neighbor |> (+) sumOfPower)
                 0
                 neighbors
     in
@@ -119,7 +119,7 @@ calculateSurroundingPowerForCell state index cell =
 -- Cell getters
 
 
-pointToCell : State -> Point -> Maybe Cell.State
+pointToCell : State -> Point -> Maybe Cell.Cell
 pointToCell state point =
     pointToIndex state point
         |> Maybe.andThen ((flip Dict.get) state.cells)
@@ -204,7 +204,7 @@ isValidPoint state point =
 -- Helpers for views
 
 
-listCells : (( CellIndex, Cell.State ) -> b) -> State -> List b
+listCells : (( CellIndex, Cell.Cell ) -> b) -> State -> List b
 listCells f state =
     Dict.toList state.cells |> List.map f
 
@@ -222,15 +222,12 @@ revealCell index state =
         cell
             |> Maybe.map
                 (\cell ->
-                    if Cell.isVisible cell then
-                        state
-                    else
-                        { state
-                            | cells =
-                                Dict.update
-                                    index
-                                    (Maybe.map Cell.reveal)
-                                    state.cells
-                        }
+                    { state
+                        | cells =
+                            Dict.update
+                                index
+                                (Maybe.map Cell.reveal)
+                                state.cells
+                    }
                 )
             |> Maybe.withDefault state

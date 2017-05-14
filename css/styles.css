@@ -31,7 +31,7 @@ body {
   cursor: pointer;
 }
 
-.grid-cell.is-visible:hover {
+.grid-cell.is-revealed:hover {
   cursor: default;
   background-color: white;
 }

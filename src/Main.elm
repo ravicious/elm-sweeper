@@ -19,26 +19,16 @@ renderCells game =
     game
         |> Game.listCells
             (\( index, cell ) ->
-                let
-                    textToDisplay =
-                        if Cell.isVisible cell then
-                            if Cell.isMonster cell then
-                                toString cell.power
-                            else
-                                toString cell.surroundingPower
-                        else
-                            ""
-                in
-                    div
-                        [ classList
-                            [ ( "grid-cell", True )
-                            , ( "grid-cell--zero-power", (Cell.hasZeroPower cell) )
-                            , ( "grid-cell--monster", (Cell.isMonster cell) )
-                            , ( "is-visible", (Cell.isVisible cell) )
-                            ]
-                        , onClick (ClickCell index)
+                div
+                    [ classList
+                        [ ( "grid-cell", True )
+                        , ( "grid-cell--zero-power", (Cell.hasZeroPower cell) )
+                        , ( "grid-cell--monster", (Cell.isMonster cell) )
+                        , ( "is-revealed", Cell.isRevealed cell )
                         ]
-                        [ text textToDisplay ]
+                    , onClick (ClickCell index)
+                    ]
+                    [ text <| Cell.toDisplayValue cell ]
             )
 
 

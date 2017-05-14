@@ -25,7 +25,7 @@ init identifier seed =
         }
 
 
-listCells : (( Board.CellIndex, Cell.State ) -> b) -> State -> List b
+listCells : (( Board.CellIndex, Cell.Cell ) -> b) -> State -> List b
 listCells f state =
     Board.listCells f state.board
 
