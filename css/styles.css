@@ -26,20 +26,24 @@ body {
   align-items: center;
 }
 
-.grid-cell:hover {
-  background-color: grey;
+.grid-cell.is-touchable:hover {
+  background-color: lightgrey;
   cursor: pointer;
 }
 
-.grid-cell.is-revealed:hover {
+.grid-cell.is-not-touchable:hover {
   cursor: default;
-  background-color: white;
+  background-color: inherit;
 }
 
-.grid-cell--zero-power {
+.grid-cell--displayed-value-surroundingPower {
   color: green;
 }
 
-.grid-cell--monster {
+.grid-cell--displayed-value-power {
   color: red;
+}
+
+.grid-cell--monster.is-revealed {
+  background-color: blanchedalmond;
 }

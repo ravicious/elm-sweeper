@@ -3,12 +3,14 @@ module Game.Cell
         ( Cell
         , init
         , setSurroundingPower
-        , reveal
+        , touch
         , hasZeroPower
         , isMonster
         , isRevealed
+        , isTouchable
         , power
-        , toDisplayValue
+        , toDisplayedValue
+        , describeDisplayedValue
         )
 
 
@@ -65,14 +67,26 @@ setSurroundingPower surroundingPower cell =
             ZeroPowerCell { state | surroundingPower = surroundingPower }
 
 
-reveal : Cell -> Cell
-reveal cell =
+touch : Cell -> Cell
+touch cell =
     case cell of
         ZeroPowerCell state ->
             ZeroPowerCell { state | isRevealed = True }
 
         MonsterCell state ->
-            MonsterCell { state | displayedValue = Power }
+            let
+                nextDisplayedValue =
+                    case state.displayedValue of
+                        None ->
+                            Power
+
+                        Power ->
+                            SurroundingPower
+
+                        SurroundingPower ->
+                            Power
+            in
+                MonsterCell { state | displayedValue = nextDisplayedValue }
 
 
 hasZeroPower : Cell -> Bool
@@ -113,6 +127,18 @@ isRevealed cell =
                     True
 
 
+{-| Determines whether touching the cell will have any effect.
+-}
+isTouchable : Cell -> Bool
+isTouchable cell =
+    case cell of
+        ZeroPowerCell state ->
+            not <| state.isRevealed
+
+        MonsterCell _ ->
+            True
+
+
 power : Cell -> Power
 power cell =
     case cell of
@@ -123,8 +149,8 @@ power cell =
             state.power
 
 
-toDisplayValue : Cell -> String
-toDisplayValue cell =
+toDisplayedValue : Cell -> String
+toDisplayedValue cell =
     case cell of
         ZeroPowerCell state ->
             if state.isRevealed then
@@ -142,3 +168,24 @@ toDisplayValue cell =
 
                 SurroundingPower ->
                     toString state.surroundingPower
+
+
+describeDisplayedValue : Cell -> String
+describeDisplayedValue cell =
+    case cell of
+        ZeroPowerCell state ->
+            if state.isRevealed then
+                "surroundingPower"
+            else
+                "none"
+
+        MonsterCell state ->
+            case state.displayedValue of
+                None ->
+                    "none"
+
+                Power ->
+                    "power"
+
+                SurroundingPower ->
+                    "surroundingPower"

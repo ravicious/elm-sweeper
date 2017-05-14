@@ -19,16 +19,26 @@ renderCells game =
     game
         |> Game.listCells
             (\( index, cell ) ->
-                div
-                    [ classList
-                        [ ( "grid-cell", True )
-                        , ( "grid-cell--zero-power", (Cell.hasZeroPower cell) )
-                        , ( "grid-cell--monster", (Cell.isMonster cell) )
-                        , ( "is-revealed", Cell.isRevealed cell )
+                let
+                    displayedValueDescriptor =
+                        Cell.describeDisplayedValue cell
+
+                    displayedValueClass =
+                        "grid-cell--displayed-value-" ++ displayedValueDescriptor
+                in
+                    div
+                        [ classList
+                            [ ( "grid-cell", True )
+                            , ( displayedValueClass, True )
+                            , ( "grid-cell--zero-power", (Cell.isRevealed cell) && (Cell.hasZeroPower cell) )
+                            , ( "grid-cell--monster", (Cell.isRevealed cell) && (Cell.isMonster cell) )
+                            , ( "is-revealed", Cell.isRevealed cell )
+                            , ( "is-touchable", Cell.isTouchable cell )
+                            , ( "is-not-touchable", not <| Cell.isTouchable cell )
+                            ]
+                        , onClick (ClickCell index)
                         ]
-                    , onClick (ClickCell index)
-                    ]
-                    [ text <| Cell.toDisplayValue cell ]
+                        [ text <| Cell.toDisplayedValue cell ]
             )
 
 
@@ -73,7 +83,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickCell index ->
-            { model | game = Game.update (Game.RevealCell index) model.game } ! []
+            { model | game = Game.update (Game.TouchCell index) model.game } ! []
 
 
 view : Model -> Html.Html Msg

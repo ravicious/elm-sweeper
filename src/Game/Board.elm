@@ -5,7 +5,7 @@ module Game.Board
         , init
         , initWithZeroPower
         , listCells
-        , revealCell
+        , touchCell
         , indexToPoint
         , pointToIndex
         )
@@ -213,8 +213,8 @@ listCells f state =
 -- Actions
 
 
-revealCell : CellIndex -> State -> State
-revealCell index state =
+touchCell : CellIndex -> State -> State
+touchCell index state =
     let
         cell =
             Dict.get index state.cells
@@ -226,7 +226,7 @@ revealCell index state =
                         | cells =
                             Dict.update
                                 index
-                                (Maybe.map Cell.reveal)
+                                (Maybe.map Cell.touch)
                                 state.cells
                     }
                 )

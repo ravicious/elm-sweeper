@@ -12,7 +12,7 @@ type alias State =
 
 
 type Action
-    = RevealCell Board.CellIndex
+    = TouchCell Board.CellIndex
 
 
 init : Variant.Identifier -> Random.Seed -> State
@@ -33,5 +33,5 @@ listCells f state =
 update : Action -> State -> State
 update action state =
     case action of
-        RevealCell index ->
-            { state | board = Board.revealCell index state.board }
+        TouchCell index ->
+            { state | board = Board.touchCell index state.board }
