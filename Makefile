@@ -3,7 +3,7 @@ default: dev
 # https://github.com/truqu/real-world-elm/blob/2f6f083c631f4461a5b782d51822ae20450d6d2e/elm/Makefile
 ELM_FILES = $(shell find . -path ./elm-stuff -prune -o -type f -name '*.elm')
 
-.PHONY: clean clean-deps server dev release test
+.PHONY: clean clean-deps server dev release test format-validate check
 
 main.js: $(ELM_FILES)
 	yarn elm-make src/Main.elm -- --yes --warn $(ELM_MAKE_FLAGS) --output $@
@@ -29,3 +29,8 @@ release: main.min.js
 
 test:
 	yarn elm-test
+
+format-validate:
+	yarn elm-format src/ tests/ -- --validate
+
+check: test format-validate
