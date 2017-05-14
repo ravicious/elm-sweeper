@@ -25,7 +25,7 @@ main.min.js : ELM_MAKE_FLAGS =
 main.min.js: main.js
 	-closure-compiler --js $< --js_output_file $@ --compilation_level SIMPLE_OPTIMIZATIONS 
 
-release: main.min.js
+release: clean main.min.js
 
 test:
 	yarn elm-test
