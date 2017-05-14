@@ -5,6 +5,7 @@ module Game.Cell
         , setSurroundingPower
         , touch
         , hasZeroPower
+        , hasZeroSurroundingPower
         , isMonster
         , isRevealed
         , isTouchable
@@ -67,6 +68,16 @@ setSurroundingPower surroundingPower cell =
             ZeroPowerCell { state | surroundingPower = surroundingPower }
 
 
+surroundingPower : Cell -> Power
+surroundingPower cell =
+    case cell of
+        MonsterCell state ->
+            state.surroundingPower
+
+        ZeroPowerCell state ->
+            state.surroundingPower
+
+
 touch : Cell -> Cell
 touch cell =
     case cell of
@@ -97,6 +108,11 @@ hasZeroPower cell =
 
         MonsterCell _ ->
             False
+
+
+hasZeroSurroundingPower : Cell -> Bool
+hasZeroSurroundingPower =
+    surroundingPower >> ((==) 0)
 
 
 isMonster : Cell -> Bool

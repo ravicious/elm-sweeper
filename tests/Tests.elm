@@ -12,7 +12,7 @@ import Game.Board as Board
 
 all : Test
 all =
-    Test.concat [ cellGettersTests ]
+    Test.concat [ cellOperationsTests ]
 
 
 boardDimensionFuzzer : Fuzz.Fuzzer Int
@@ -39,9 +39,9 @@ boardDimensionsAndCellIndexFuzzer =
             )
 
 
-cellGettersTests : Test
-cellGettersTests =
-    describe "Cell getters tests"
+cellOperationsTests : Test
+cellOperationsTests =
+    describe "Cell operations tests"
         [ fuzz
             boardDimensionsAndCellIndexFuzzer
             "Transforming an index to a point and then back to an index returns the same index"
