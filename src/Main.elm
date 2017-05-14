@@ -11,7 +11,7 @@ import Random
 import Game
 import Game.Variant
 import Game.Board
-import Game.Cell
+import Game.Cell as Cell
 
 
 renderCells : Game.State -> List (Html.Html Msg)
@@ -21,15 +21,20 @@ renderCells game =
             (\( index, cell ) ->
                 let
                     textToDisplay =
-                        if Game.Cell.isVisible cell then
-                            toString cell.power
+                        if Cell.isVisible cell then
+                            if Cell.isMonster cell then
+                                toString cell.power
+                            else
+                                toString cell.surroundingPower
                         else
                             ""
                 in
                     div
                         [ classList
                             [ ( "grid-cell", True )
-                            , ( "is-visible", (Game.Cell.isVisible cell) )
+                            , ( "grid-cell--zero-power", (Cell.hasZeroPower cell) )
+                            , ( "grid-cell--monster", (Cell.isMonster cell) )
+                            , ( "is-visible", (Cell.isVisible cell) )
                             ]
                         , onClick (ClickCell index)
                         ]

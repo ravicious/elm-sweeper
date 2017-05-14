@@ -35,3 +35,11 @@ body {
   cursor: default;
   background-color: white;
 }
+
+.grid-cell--zero-power {
+  color: green;
+}
+
+.grid-cell--monster {
+  color: red;
+}
