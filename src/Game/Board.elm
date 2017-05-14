@@ -13,7 +13,6 @@ module Game.Board
 import Dict exposing (Dict)
 import Random
 import Random.List
-import Maybe.Extra
 import Game.Cell as Cell
 import Game.Variant as Variant exposing (Variant)
 import Game.Point as Point exposing (Point)
@@ -116,7 +115,7 @@ calculateSurroundingPowerForCell state index cell =
 
 
 
--- Cell getters
+-- Cell operations
 
 
 pointToCell : State -> Point -> Maybe Cell.Cell
@@ -127,6 +126,42 @@ pointToCell state point =
 
 getNeighbors : State -> CellIndex -> Neighbors
 getNeighbors state index =
+    indexToNeighborPoints state index
+        |> Maybe.map
+            (List.foldr
+                -- Resolve transformed points to cells.
+                (\point neighborCells ->
+                    point
+                        |> Maybe.andThen (pointToCell state)
+                        |> Maybe.map ((flip (::)) neighborCells)
+                        |> Maybe.withDefault neighborCells
+                )
+                []
+            )
+        |> Maybe.withDefault []
+
+
+transformNeighbors : (Cell.Cell -> Cell.Cell) -> CellIndex -> State -> State
+transformNeighbors f index state =
+    indexToNeighborPoints state index
+        |> Maybe.map
+            (List.foldr
+                (\point state ->
+                    point
+                        |> Maybe.andThen (pointToIndex state)
+                        |> Maybe.map
+                            (\index ->
+                                { state | cells = Dict.update index (Maybe.map f) state.cells }
+                            )
+                        |> Maybe.withDefault state
+                )
+                state
+            )
+        |> Maybe.withDefault state
+
+
+indexToNeighborPoints : State -> CellIndex -> Maybe (List (Maybe Point))
+indexToNeighborPoints state index =
     indexToPoint state index
         |> Maybe.map
             (\point ->
@@ -140,19 +175,6 @@ getNeighbors state index =
                 , transformPoint 1 1 state point
                 ]
             )
-        |> Maybe.map
-            (List.foldr
-                -- Resolve transformed points to cells.
-                (\point neighborCells ->
-                    point
-                        |> Maybe.map (pointToCell state)
-                        |> Maybe.map ((flip (::)) neighborCells)
-                        |> Maybe.withDefault neighborCells
-                )
-                []
-            )
-        |> Maybe.map Maybe.Extra.values
-        |> Maybe.withDefault []
 
 
 indexToPoint : State -> CellIndex -> Maybe Point
@@ -222,12 +244,24 @@ touchCell index state =
         cell
             |> Maybe.map
                 (\cell ->
-                    { state
-                        | cells =
-                            Dict.update
-                                index
-                                (Maybe.map Cell.touch)
-                                state.cells
-                    }
+                    if Cell.isTouchable cell then
+                        { state
+                            | cells =
+                                Dict.update
+                                    index
+                                    (Maybe.map Cell.touch)
+                                    state.cells
+                        }
+                            |> revealNeighborsIfCellHasZeroSurroundingPower index cell
+                    else
+                        state
                 )
             |> Maybe.withDefault state
+
+
+revealNeighborsIfCellHasZeroSurroundingPower : CellIndex -> Cell.Cell -> State -> State
+revealNeighborsIfCellHasZeroSurroundingPower index cell state =
+    if not <| Cell.hasZeroSurroundingPower cell then
+        state
+    else
+        transformNeighbors (\neighbor -> Cell.touch neighbor) index state

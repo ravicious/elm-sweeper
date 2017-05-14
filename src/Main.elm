@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -48,7 +48,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -65,6 +65,7 @@ type alias Model =
 
 type Msg
     = ClickCell Game.Board.CellIndex
+    | InitializeWithSeed Int
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -79,11 +80,22 @@ init flags =
             ! []
 
 
+port initializeWithSeed : (Int -> msg) -> Sub msg
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    initializeWithSeed InitializeWithSeed
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickCell index ->
             { model | game = Game.update (Game.TouchCell index) model.game } ! []
+
+        InitializeWithSeed randomNumber ->
+            init { randomNumber = randomNumber }
 
 
 view : Model -> Html.Html Msg

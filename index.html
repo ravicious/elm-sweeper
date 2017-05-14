@@ -16,6 +16,10 @@
       var app = Elm.Main.embed(node, {
         randomNumber: randomNumber,
       })
+
+      window.initializeWithSeed = function(seed) {
+        app.ports.initializeWithSeed.send(seed)
+      }
     </script>
   </body>
 </html>
