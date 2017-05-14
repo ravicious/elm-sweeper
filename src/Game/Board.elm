@@ -22,6 +22,10 @@ type alias State =
     }
 
 
+
+-- Init
+
+
 init : Variant -> Random.Seed -> State
 init variant seed =
     { rows = variant.rows
@@ -54,13 +58,21 @@ initCells variant seed =
             Random.List.shuffle cells |> (flip Random.step) seed
     in
         shuffledCells
-            |> List.indexedMap (\index cell -> ( index, cell ))
+            |> List.indexedMap (,)
             |> Dict.fromList
+
+
+
+-- Helpers for views
 
 
 listCells : (( CellIndex, Cell.State ) -> b) -> State -> List b
 listCells f state =
     Dict.toList state.cells |> List.map f
+
+
+
+-- Actions
 
 
 revealCell : CellIndex -> State -> State
