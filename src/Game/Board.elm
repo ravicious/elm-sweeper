@@ -6,13 +6,17 @@ module Game.Board
         , initWithZeroPower
         , listCells
         , touchCell
+        , revealCell
         , indexToPoint
+        , indexToCell
         , pointToIndex
+        , getNeighborIndexes
         )
 
 import Dict exposing (Dict)
 import Random
 import Random.List
+import Maybe.Extra
 import Game.Cell as Cell
 import Game.Variant as Variant exposing (Variant)
 import Game.Point as Point exposing (Point)
@@ -121,46 +125,32 @@ calculateSurroundingPowerForCell state index cell =
 pointToCell : State -> Point -> Maybe Cell.Cell
 pointToCell state point =
     pointToIndex state point
-        |> Maybe.andThen ((flip Dict.get) state.cells)
+        |> Maybe.andThen (indexToCell state)
 
 
 getNeighbors : State -> CellIndex -> Neighbors
-getNeighbors state index =
+getNeighbors =
+    transformNeighborPoints pointToCell
+
+
+getNeighborIndexes : State -> CellIndex -> List CellIndex
+getNeighborIndexes =
+    transformNeighborPoints pointToIndex
+
+
+transformNeighborPoints : (State -> Point -> Maybe a) -> State -> CellIndex -> List a
+transformNeighborPoints f state index =
     indexToNeighborPoints state index
-        |> Maybe.map
-            (List.foldr
-                -- Resolve transformed points to cells.
-                (\point neighborCells ->
-                    point
-                        |> Maybe.andThen (pointToCell state)
-                        |> Maybe.map ((flip (::)) neighborCells)
-                        |> Maybe.withDefault neighborCells
-                )
-                []
+        |> List.foldr
+            (\point xs ->
+                f state point
+                    |> Maybe.map ((flip (::)) xs)
+                    |> Maybe.withDefault xs
             )
-        |> Maybe.withDefault []
+            []
 
 
-transformNeighbors : (Cell.Cell -> Cell.Cell) -> CellIndex -> State -> State
-transformNeighbors f index state =
-    indexToNeighborPoints state index
-        |> Maybe.map
-            (List.foldr
-                (\point state ->
-                    point
-                        |> Maybe.andThen (pointToIndex state)
-                        |> Maybe.map
-                            (\index ->
-                                { state | cells = Dict.update index (Maybe.map f) state.cells }
-                            )
-                        |> Maybe.withDefault state
-                )
-                state
-            )
-        |> Maybe.withDefault state
-
-
-indexToNeighborPoints : State -> CellIndex -> Maybe (List (Maybe Point))
+indexToNeighborPoints : State -> CellIndex -> List Point
 indexToNeighborPoints state index =
     indexToPoint state index
         |> Maybe.map
@@ -175,6 +165,8 @@ indexToNeighborPoints state index =
                 , transformPoint 1 1 state point
                 ]
             )
+        |> Maybe.map Maybe.Extra.values
+        |> Maybe.withDefault []
 
 
 indexToPoint : State -> CellIndex -> Maybe Point
@@ -190,6 +182,11 @@ indexToPoint state index =
             Just <| Point x y
     else
         Nothing
+
+
+indexToCell : State -> CellIndex -> Maybe Cell.Cell
+indexToCell state index =
+    Dict.get index state.cells
 
 
 pointToIndex : State -> Point -> Maybe CellIndex
@@ -222,6 +219,14 @@ isValidPoint state point =
     point.x < state.columns && point.x >= 0 && point.y < state.rows && point.y >= 0
 
 
+updateCell : (Cell.Cell -> Cell.Cell) -> CellIndex -> State -> State
+updateCell f index state =
+    if isValidIndex state index then
+        { state | cells = Dict.update index (Maybe.map f) state.cells }
+    else
+        state
+
+
 
 -- Helpers for views
 
@@ -236,32 +241,15 @@ listCells f state =
 
 
 touchCell : CellIndex -> State -> State
-touchCell index state =
-    let
-        cell =
-            Dict.get index state.cells
-    in
-        cell
-            |> Maybe.map
-                (\cell ->
-                    if Cell.isTouchable cell then
-                        { state
-                            | cells =
-                                Dict.update
-                                    index
-                                    (Maybe.map Cell.touch)
-                                    state.cells
-                        }
-                            |> revealNeighborsIfCellHasZeroSurroundingPower index cell
-                    else
-                        state
-                )
-            |> Maybe.withDefault state
+touchCell =
+    updateCell <|
+        \cell ->
+            if Cell.isTouchable cell then
+                Cell.touch cell
+            else
+                cell
 
 
-revealNeighborsIfCellHasZeroSurroundingPower : CellIndex -> Cell.Cell -> State -> State
-revealNeighborsIfCellHasZeroSurroundingPower index cell state =
-    if not <| Cell.hasZeroSurroundingPower cell then
-        state
-    else
-        transformNeighbors (\neighbor -> Cell.touch neighbor) index state
+revealCell : CellIndex -> State -> State
+revealCell =
+    updateCell Cell.reveal

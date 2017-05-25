@@ -4,6 +4,7 @@ module Game.Cell
         , init
         , setSurroundingPower
         , touch
+        , reveal
         , hasZeroPower
         , hasZeroSurroundingPower
         , isMonster
@@ -100,6 +101,16 @@ touch cell =
                 MonsterCell { state | displayedValue = nextDisplayedValue }
 
 
+reveal : Cell -> Cell
+reveal cell =
+    case cell of
+        ZeroPowerCell state ->
+            ZeroPowerCell { state | isRevealed = True }
+
+        MonsterCell state ->
+            MonsterCell { state | displayedValue = Power }
+
+
 hasZeroPower : Cell -> Bool
 hasZeroPower cell =
     case cell of
@@ -170,7 +181,10 @@ toDisplayedValue cell =
     case cell of
         ZeroPowerCell state ->
             if state.isRevealed then
-                toString state.surroundingPower
+                if state.surroundingPower == 0 then
+                    ""
+                else
+                    toString state.surroundingPower
             else
                 ""
 

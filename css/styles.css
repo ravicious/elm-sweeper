@@ -47,3 +47,7 @@ body {
 .grid-cell--monster.is-revealed {
   background-color: blanchedalmond;
 }
+
+.grid-cell--zero-surrounding-power.is-revealed {
+  border: 1px solid whitesmoke;
+}
