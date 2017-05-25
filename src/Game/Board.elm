@@ -219,7 +219,7 @@ isValidIndex state index =
 
 isValidPoint : State -> Point -> Bool
 isValidPoint state point =
-    point.x < state.columns && point.y < state.rows
+    point.x < state.columns && point.x >= 0 && point.y < state.rows && point.y >= 0
 
 
 
