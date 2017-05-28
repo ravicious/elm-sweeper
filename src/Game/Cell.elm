@@ -2,7 +2,7 @@ module Game.Cell
     exposing
         ( Cell
         , init
-        , setSurroundingPower
+        , setSurroundingPowerFromNeighbors
         , touch
         , reveal
         , hasZeroPower
@@ -15,9 +15,24 @@ module Game.Cell
         , describeDisplayedValue
         )
 
+import Tagged exposing (Tagged)
+import Tagged.Extra
+
+
+type PowerTag
+    = PowerTag
+
+
+type SurroundingPowerTag
+    = SurroundingPowerTag
+
 
 type alias Power =
-    Int
+    Tagged PowerTag Int
+
+
+type alias SurroundingPower =
+    Tagged SurroundingPowerTag Int
 
 
 type MonsterCellDisplayedValue
@@ -28,12 +43,12 @@ type MonsterCellDisplayedValue
 
 type alias ZeroPowerCellState =
     { isRevealed : Bool
-    , surroundingPower : Power
+    , surroundingPower : SurroundingPower
     }
 
 
 type alias MonsterCellState =
-    { surroundingPower : Power
+    { surroundingPower : SurroundingPower
     , power : Power
     , displayedValue : MonsterCellDisplayedValue
     }
@@ -44,32 +59,39 @@ type Cell
     | MonsterCell MonsterCellState
 
 
-init : Power -> Cell
+init : Int -> Cell
 init power =
     if power == 0 then
         ZeroPowerCell
             { isRevealed = False
-            , surroundingPower = 0
+            , surroundingPower = Tagged.tag 0
             }
     else
         MonsterCell
-            { surroundingPower = 0
-            , power = power
+            { surroundingPower = Tagged.tag 0
+            , power = Tagged.tag power
             , displayedValue = None
             }
 
 
-setSurroundingPower : Power -> Cell -> Cell
-setSurroundingPower surroundingPower cell =
-    case cell of
-        MonsterCell state ->
-            MonsterCell { state | surroundingPower = surroundingPower }
+setSurroundingPowerFromNeighbors : List Cell -> Cell -> Cell
+setSurroundingPowerFromNeighbors neighbors cell =
+    let
+        surroundingPower =
+            neighbors
+                |> List.foldr (\neighbor sumOfPower -> power neighbor |> Tagged.map2 (+) sumOfPower)
+                    (Tagged.tag 0)
+                |> Tagged.retag
+    in
+        case cell of
+            MonsterCell state ->
+                MonsterCell { state | surroundingPower = surroundingPower }
 
-        ZeroPowerCell state ->
-            ZeroPowerCell { state | surroundingPower = surroundingPower }
+            ZeroPowerCell state ->
+                ZeroPowerCell { state | surroundingPower = surroundingPower }
 
 
-surroundingPower : Cell -> Power
+surroundingPower : Cell -> SurroundingPower
 surroundingPower cell =
     case cell of
         MonsterCell state ->
@@ -123,7 +145,7 @@ hasZeroPower cell =
 
 hasZeroSurroundingPower : Cell -> Bool
 hasZeroSurroundingPower =
-    surroundingPower >> ((==) 0)
+    surroundingPower >> Tagged.Extra.is ((==) 0)
 
 
 isMonster : Cell -> Bool
@@ -170,7 +192,7 @@ power : Cell -> Power
 power cell =
     case cell of
         ZeroPowerCell _ ->
-            0
+            Tagged.tag 0
 
         MonsterCell state ->
             state.power
@@ -181,10 +203,10 @@ toDisplayedValue cell =
     case cell of
         ZeroPowerCell state ->
             if state.isRevealed then
-                if state.surroundingPower == 0 then
+                if state.surroundingPower |> Tagged.Extra.is ((==) 0) then
                     ""
                 else
-                    toString state.surroundingPower
+                    state.surroundingPower |> Tagged.untag |> toString
             else
                 ""
 
@@ -194,10 +216,10 @@ toDisplayedValue cell =
                     ""
 
                 Power ->
-                    toString state.power
+                    state.power |> Tagged.untag |> toString
 
                 SurroundingPower ->
-                    toString state.surroundingPower
+                    state.surroundingPower |> Tagged.untag |> toString
 
 
 describeDisplayedValue : Cell -> String
