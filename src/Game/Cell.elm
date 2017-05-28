@@ -10,7 +10,6 @@ module Game.Cell
         , isMonster
         , isRevealed
         , isTouchable
-        , power
         , toDisplayedValue
         , describeDisplayedValue
         )
@@ -79,7 +78,10 @@ setSurroundingPowerFromNeighbors neighbors cell =
     let
         surroundingPower =
             neighbors
-                |> List.foldr (\neighbor sumOfPower -> power neighbor |> Tagged.map2 (+) sumOfPower)
+                |> List.foldr
+                    (\neighbor sumOfPower ->
+                        getPower neighbor |> Tagged.map2 (+) sumOfPower
+                    )
                     (Tagged.tag 0)
                 |> Tagged.retag
     in
@@ -91,8 +93,8 @@ setSurroundingPowerFromNeighbors neighbors cell =
                 ZeroPowerCell { state | surroundingPower = surroundingPower }
 
 
-surroundingPower : Cell -> SurroundingPower
-surroundingPower cell =
+getSurroundingPower : Cell -> SurroundingPower
+getSurroundingPower cell =
     case cell of
         MonsterCell state ->
             state.surroundingPower
@@ -145,7 +147,7 @@ hasZeroPower cell =
 
 hasZeroSurroundingPower : Cell -> Bool
 hasZeroSurroundingPower =
-    surroundingPower >> Tagged.Extra.is ((==) 0)
+    getSurroundingPower >> Tagged.Extra.is ((==) 0)
 
 
 isMonster : Cell -> Bool
@@ -188,8 +190,8 @@ isTouchable cell =
             True
 
 
-power : Cell -> Power
-power cell =
+getPower : Cell -> Power
+getPower cell =
     case cell of
         ZeroPowerCell _ ->
             Tagged.tag 0
