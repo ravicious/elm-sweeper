@@ -5,6 +5,7 @@ module Game.Cell
         , setSurroundingPowerFromNeighbors
         , touch
         , reveal
+        , getPower
         , hasZeroPower
         , hasZeroSurroundingPower
         , isMonster
