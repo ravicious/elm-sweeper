@@ -84,6 +84,9 @@ init flags =
 port initializeWithSeed : (Int -> msg) -> Sub msg
 
 
+port gameHasBeenLost : () -> Cmd msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     initializeWithSeed InitializeWithSeed
@@ -93,7 +96,15 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickCell index ->
-            { model | game = Game.update (Game.TouchCell index) model.game } ! []
+            let
+                newModel =
+                    { model | game = Game.update (Game.TouchCell index) model.game }
+            in
+                newModel
+                    ! if Game.hasBeenLost newModel.game then
+                        [ gameHasBeenLost () ]
+                      else
+                        []
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
