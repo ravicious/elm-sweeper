@@ -112,9 +112,11 @@ view model =
                     ++ (toString <|
                             Game.getPlayerLevel model.game
                        )
-                    ++ " Xp: "
+                    ++ " XP: "
                     ++ (toString <|
                             Game.getPlayerXp model.game
                        )
+                    ++ " HP: "
+                    ++ (toString <| Game.getPlayerHp model.game)
             ]
         ]

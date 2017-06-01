@@ -1,4 +1,14 @@
-module Game exposing (State, Action(..), init, listCells, getPlayerLevel, getPlayerXp, update)
+module Game
+    exposing
+        ( State
+        , Action(..)
+        , init
+        , listCells
+        , getPlayerLevel
+        , getPlayerXp
+        , getPlayerHp
+        , update
+        )
 
 import Random
 import Tagged
@@ -40,6 +50,11 @@ getPlayerLevel =
 getPlayerXp : State -> Int
 getPlayerXp =
     .player >> .xp >> Tagged.untag
+
+
+getPlayerHp : State -> Int
+getPlayerHp =
+    .player >> .hp >> Tagged.untag
 
 
 listCells : (( Board.CellIndex, Cell.Cell ) -> b) -> State -> List b
