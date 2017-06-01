@@ -26,6 +26,20 @@
 
         app.ports.initializeWithSeed.send(randomNumber)
       }
+
+      app.ports.gameHasBeenLost.subscribe(function() {
+        // We can't display the popup immediately, because the player
+        // won't be able to see the effect of their last action.
+        // That's because `window.confirm` will block rendering.
+        //
+        // The timeout has to be greater than 1, because when set to one,
+        // it doesn't make any difference in Safari.
+        window.setTimeout(function() {
+          var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
+
+          wantsToPlayAgain && initializeWithRandomSeed()
+        }, 100)
+      })
     </script>
   </body>
 </html>
