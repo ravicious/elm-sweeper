@@ -109,13 +109,8 @@ calculateSurroundingPowerForCell state index cell =
     let
         neighbors =
             getNeighbors state index
-
-        surroundingPower =
-            List.foldr (\neighbor sumOfPower -> Cell.power neighbor |> (+) sumOfPower)
-                0
-                neighbors
     in
-        Cell.setSurroundingPower surroundingPower cell
+        Cell.setSurroundingPowerFromNeighbors neighbors cell
 
 
 

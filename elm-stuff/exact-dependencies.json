@@ -4,5 +4,6 @@
     "elm-community/random-extra": "2.0.0",
     "elm-lang/html": "2.0.0",
     "elm-community/list-extra": "6.1.0",
+    "joneshf/elm-tagged": "1.1.1",
     "elm-lang/core": "5.1.1"
 }

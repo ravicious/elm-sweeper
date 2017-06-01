@@ -101,12 +101,20 @@ update msg model =
 
 view : Model -> Html.Html Msg
 view model =
-    let
-        game =
-            Game.init Game.Variant.SixteenByThirty
-    in
-        div []
-            [ div [ class "grid grid--16x30" ] <|
-                renderCells model.game
-            , span [] [ text <| "Seed: " ++ (toString model.initialNumber) ]
+    div []
+        [ div [ class "grid grid--16x30" ] <|
+            renderCells model.game
+        , span []
+            [ text <|
+                "Seed: "
+                    ++ (toString model.initialNumber)
+                    ++ " Lvl: "
+                    ++ (toString <|
+                            Game.getPlayerLevel model.game
+                       )
+                    ++ " Xp: "
+                    ++ (toString <|
+                            Game.getPlayerXp model.game
+                       )
             ]
+        ]
