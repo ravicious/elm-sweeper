@@ -90,7 +90,11 @@ update action state =
                                 | board =
                                     Board.touchCell index state.board
                                         |> revealNeighborsWithZeroPowerIfZeroSurroundingPower index
-                                , player = Player.touchCell variant.expProgression cell state.player
+                                , player =
+                                    if not <| Cell.isRevealed cell then
+                                        Player.touchCell variant.expProgression cell state.player
+                                    else
+                                        state.player
                             }
                         )
                     |> Maybe.withDefault state
