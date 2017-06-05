@@ -5,6 +5,7 @@ module Game.Cell
         , setSurroundingPowerFromNeighbors
         , touch
         , reveal
+        , changeBet
         , getPower
         , hasZeroPower
         , hasZeroSurroundingPower
@@ -17,6 +18,7 @@ module Game.Cell
 
 import Tagged exposing (Tagged)
 import Tagged.Extra
+import Game.Direction exposing (Direction(..))
 
 
 type PowerTag
@@ -35,6 +37,10 @@ type alias SurroundingPower =
     Tagged SurroundingPowerTag Int
 
 
+type alias Bet =
+    Maybe Int
+
+
 type MonsterCellDisplayedValue
     = Power
     | SurroundingPower
@@ -44,6 +50,7 @@ type MonsterCellDisplayedValue
 type alias ZeroPowerCellState =
     { isRevealed : Bool
     , surroundingPower : SurroundingPower
+    , bet : Bet
     }
 
 
@@ -51,6 +58,7 @@ type alias MonsterCellState =
     { surroundingPower : SurroundingPower
     , power : Power
     , displayedValue : MonsterCellDisplayedValue
+    , bet : Bet
     }
 
 
@@ -65,12 +73,14 @@ init power =
         ZeroPowerCell
             { isRevealed = False
             , surroundingPower = Tagged.tag 0
+            , bet = Nothing
             }
     else
         MonsterCell
             { surroundingPower = Tagged.tag 0
             , power = Tagged.tag power
             , displayedValue = None
+            , bet = Nothing
             }
 
 
@@ -104,6 +114,16 @@ getSurroundingPower cell =
             state.surroundingPower
 
 
+getBet : Cell -> Bet
+getBet cell =
+    case cell of
+        MonsterCell state ->
+            state.bet
+
+        ZeroPowerCell state ->
+            state.bet
+
+
 touch : Cell -> Cell
 touch cell =
     case cell of
@@ -134,6 +154,41 @@ reveal cell =
 
         MonsterCell state ->
             MonsterCell { state | displayedValue = Power }
+
+
+changeBet : ( Int, Int ) -> Direction -> Cell -> Cell
+changeBet ( minBet, maxBet ) direction cell =
+    let
+        newBet =
+            case direction of
+                Left ->
+                    case getBet cell of
+                        Just currentBet ->
+                            if currentBet == minBet then
+                                Nothing
+                            else
+                                Just <| currentBet - 1
+
+                        Nothing ->
+                            Just maxBet
+
+                Right ->
+                    case getBet cell of
+                        Just currentBet ->
+                            if currentBet == maxBet then
+                                Nothing
+                            else
+                                Just <| currentBet + 1
+
+                        Nothing ->
+                            Just minBet
+    in
+        case cell of
+            ZeroPowerCell state ->
+                ZeroPowerCell { state | bet = newBet }
+
+            MonsterCell state ->
+                MonsterCell { state | bet = newBet }
 
 
 hasZeroPower : Cell -> Bool
@@ -211,12 +266,12 @@ toDisplayedValue cell =
                 else
                     state.surroundingPower |> Tagged.untag |> toString
             else
-                ""
+                getBet cell |> Maybe.map toString |> Maybe.withDefault ""
 
         MonsterCell state ->
             case state.displayedValue of
                 None ->
-                    ""
+                    getBet cell |> Maybe.map toString |> Maybe.withDefault ""
 
                 Power ->
                     state.power |> Tagged.untag |> toString
@@ -232,12 +287,22 @@ describeDisplayedValue cell =
             if state.isRevealed then
                 "surroundingPower"
             else
-                "none"
+                case getBet cell of
+                    Just _ ->
+                        "bet"
+
+                    Nothing ->
+                        "none"
 
         MonsterCell state ->
             case state.displayedValue of
                 None ->
-                    "none"
+                    case getBet cell of
+                        Just _ ->
+                            "bet"
+
+                        Nothing ->
+                            "none"
 
                 Power ->
                     "power"

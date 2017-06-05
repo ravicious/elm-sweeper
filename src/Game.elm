@@ -18,6 +18,7 @@ import Game.Board as Board
 import Game.Variant as Variant
 import Game.Player as Player
 import Game.RevealNeighborsWithZeroPower
+import Game.Direction exposing (Direction(..))
 
 
 type alias State =
@@ -36,6 +37,7 @@ type Status
 
 type Action
     = TouchCell Board.CellIndex
+    | ChangeBet Direction Board.CellIndex
 
 
 init : Variant.Identifier -> Random.Seed -> State
@@ -147,5 +149,19 @@ update action state =
                                     |> endGameIfPlayerIsDead
                             )
                         |> Maybe.withDefault state
+
+            ChangeBet direction index ->
+                let
+                    variant =
+                        Variant.get state.variantIdentifier
+                in
+                    { state
+                        | board =
+                            Board.changeBet
+                                ( variant.minPower, variant.maxPower )
+                                direction
+                                index
+                                state.board
+                    }
     else
         state

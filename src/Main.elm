@@ -12,6 +12,7 @@ import Game
 import Game.Variant
 import Game.Board
 import Game.Cell as Cell
+import Game.Direction exposing (Direction(..))
 
 
 renderCells : Game.State -> List (Html.Html Msg)
@@ -38,6 +39,7 @@ renderCells game =
                             , ( "is-not-touchable", not <| Cell.isTouchable cell )
                             ]
                         , onClick (ClickCell index)
+                        , attribute "data-index" (toString index)
                         ]
                         [ text <| Cell.toDisplayedValue cell ]
             )
@@ -67,6 +69,7 @@ type alias Model =
 type Msg
     = ClickCell Game.Board.CellIndex
     | InitializeWithSeed Int
+    | KeyPressedOverCell ( Game.Board.CellIndex, String )
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -84,12 +87,37 @@ init flags =
 port initializeWithSeed : (Int -> msg) -> Sub msg
 
 
+port keyPressedOverCell : (( Game.Board.CellIndex, String ) -> msg) -> Sub msg
+
+
 port gameHasBeenLost : () -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    initializeWithSeed InitializeWithSeed
+    Sub.batch
+        [ initializeWithSeed InitializeWithSeed
+        , keyPressedOverCell KeyPressedOverCell
+        ]
+
+
+keyCodeToDirection : String -> Maybe Direction
+keyCodeToDirection string =
+    case string of
+        "KeyA" ->
+            Just Left
+
+        "ArrowLeft" ->
+            Just Left
+
+        "KeyD" ->
+            Just Right
+
+        "ArrowRight" ->
+            Just Right
+
+        _ ->
+            Nothing
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -105,6 +133,20 @@ update msg model =
                         [ gameHasBeenLost () ]
                       else
                         []
+
+        KeyPressedOverCell ( index, keyCode ) ->
+            keyCodeToDirection keyCode
+                |> Maybe.map
+                    (\direction ->
+                        { model
+                            | game =
+                                Game.update
+                                    (Game.ChangeBet direction index)
+                                    model.game
+                        }
+                            ! []
+                    )
+                |> Maybe.withDefault (model ! [])
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }

@@ -44,6 +44,10 @@ body {
   color: red;
 }
 
+.grid-cell--displayed-value-bet {
+  color: darkblue;
+}
+
 .grid-cell--monster.is-revealed {
   background-color: blanchedalmond;
 }

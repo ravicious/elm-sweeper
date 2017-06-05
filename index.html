@@ -40,6 +40,18 @@
           wantsToPlayAgain && initializeWithRandomSeed()
         }, 100)
       })
+
+      document.onkeydown = function(event) {
+        var cell = document.querySelectorAll('.grid-cell:hover')[0]
+
+        if (!cell) {
+          return
+        }
+
+        const index = parseInt(cell.dataset.index, 10)
+
+        app.ports.keyPressedOverCell.send([index, event.code])
+      }
     </script>
   </body>
 </html>
