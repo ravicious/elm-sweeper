@@ -7,6 +7,7 @@ module Game.Board
         , listCells
         , touchCell
         , revealCell
+        , changeBet
         , indexToPoint
         , indexToCell
         , pointToIndex
@@ -20,6 +21,7 @@ import Maybe.Extra
 import Game.Cell as Cell
 import Game.Variant as Variant exposing (Variant)
 import Game.Point as Point exposing (Point)
+import Game.Direction exposing (Direction(..))
 
 
 type alias CellIndex =
@@ -248,3 +250,8 @@ touchCell =
 revealCell : CellIndex -> State -> State
 revealCell =
     updateCell Cell.reveal
+
+
+changeBet : ( Int, Int ) -> Direction -> CellIndex -> State -> State
+changeBet betThresholds direction =
+    updateCell <| \cell -> Cell.changeBet betThresholds direction cell
