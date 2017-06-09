@@ -47,45 +47,56 @@ type MonsterCellDisplayedValue
     | None
 
 
+type alias CommonState =
+    { surroundingPower : SurroundingPower
+    , bet : Bet
+    }
+
+
 type alias ZeroPowerCellState =
     { isRevealed : Bool
-    , surroundingPower : SurroundingPower
-    , bet : Bet
     }
 
 
 type alias MonsterCellState =
-    { surroundingPower : SurroundingPower
-    , power : Power
+    { power : Power
     , displayedValue : MonsterCellDisplayedValue
-    , bet : Bet
     }
 
 
-type Cell
+type SpecificState
     = ZeroPowerCell ZeroPowerCellState
     | MonsterCell MonsterCellState
 
 
+type Cell
+    = Cell CommonState SpecificState
+
+
 init : Int -> Cell
 init power =
-    if power == 0 then
-        ZeroPowerCell
-            { isRevealed = False
-            , surroundingPower = Tagged.tag 0
-            , bet = Nothing
-            }
-    else
-        MonsterCell
+    let
+        commonState =
             { surroundingPower = Tagged.tag 0
-            , power = Tagged.tag power
-            , displayedValue = None
             , bet = Nothing
             }
+
+        specificState =
+            if power == 0 then
+                ZeroPowerCell
+                    { isRevealed = False
+                    }
+            else
+                MonsterCell
+                    { power = Tagged.tag power
+                    , displayedValue = None
+                    }
+    in
+        Cell commonState specificState
 
 
 setSurroundingPowerFromNeighbors : List Cell -> Cell -> Cell
-setSurroundingPowerFromNeighbors neighbors cell =
+setSurroundingPowerFromNeighbors neighbors (Cell commonState specificState) =
     let
         surroundingPower =
             neighbors
@@ -96,73 +107,60 @@ setSurroundingPowerFromNeighbors neighbors cell =
                     (Tagged.tag 0)
                 |> Tagged.retag
     in
-        case cell of
-            MonsterCell state ->
-                MonsterCell { state | surroundingPower = surroundingPower }
-
-            ZeroPowerCell state ->
-                ZeroPowerCell { state | surroundingPower = surroundingPower }
+        Cell { commonState | surroundingPower = surroundingPower } specificState
 
 
 getSurroundingPower : Cell -> SurroundingPower
-getSurroundingPower cell =
-    case cell of
-        MonsterCell state ->
-            state.surroundingPower
-
-        ZeroPowerCell state ->
-            state.surroundingPower
+getSurroundingPower (Cell commonState _) =
+    commonState.surroundingPower
 
 
 getBet : Cell -> Bet
-getBet cell =
-    case cell of
-        MonsterCell state ->
-            state.bet
-
-        ZeroPowerCell state ->
-            state.bet
+getBet (Cell commonState _) =
+    commonState.bet
 
 
 touch : Cell -> Cell
-touch cell =
-    case cell of
-        ZeroPowerCell state ->
-            ZeroPowerCell { state | isRevealed = True }
+touch (Cell commonState specificState) =
+    Cell commonState <|
+        case specificState of
+            ZeroPowerCell state ->
+                ZeroPowerCell { state | isRevealed = True }
 
-        MonsterCell state ->
-            let
-                nextDisplayedValue =
-                    case state.displayedValue of
-                        None ->
-                            Power
+            MonsterCell state ->
+                let
+                    nextDisplayedValue =
+                        case state.displayedValue of
+                            None ->
+                                Power
 
-                        Power ->
-                            SurroundingPower
+                            Power ->
+                                SurroundingPower
 
-                        SurroundingPower ->
-                            Power
-            in
-                MonsterCell { state | displayedValue = nextDisplayedValue }
+                            SurroundingPower ->
+                                Power
+                in
+                    MonsterCell { state | displayedValue = nextDisplayedValue }
 
 
 reveal : Cell -> Cell
-reveal cell =
-    case cell of
-        ZeroPowerCell state ->
-            ZeroPowerCell { state | isRevealed = True }
+reveal (Cell commonState specificState) =
+    Cell commonState <|
+        case specificState of
+            ZeroPowerCell state ->
+                ZeroPowerCell { state | isRevealed = True }
 
-        MonsterCell state ->
-            MonsterCell { state | displayedValue = Power }
+            MonsterCell state ->
+                MonsterCell { state | displayedValue = Power }
 
 
 changeBet : ( Int, Int ) -> Direction -> Cell -> Cell
-changeBet ( minBet, maxBet ) direction cell =
+changeBet ( minBet, maxBet ) direction (Cell commonState specificState) =
     let
         newBet =
             case direction of
                 Left ->
-                    case getBet cell of
+                    case commonState.bet of
                         Just currentBet ->
                             if currentBet == minBet then
                                 Nothing
@@ -173,7 +171,7 @@ changeBet ( minBet, maxBet ) direction cell =
                             Just maxBet
 
                 Right ->
-                    case getBet cell of
+                    case commonState.bet of
                         Just currentBet ->
                             if currentBet == maxBet then
                                 Nothing
@@ -183,17 +181,12 @@ changeBet ( minBet, maxBet ) direction cell =
                         Nothing ->
                             Just minBet
     in
-        case cell of
-            ZeroPowerCell state ->
-                ZeroPowerCell { state | bet = newBet }
-
-            MonsterCell state ->
-                MonsterCell { state | bet = newBet }
+        Cell { commonState | bet = newBet } specificState
 
 
 hasZeroPower : Cell -> Bool
-hasZeroPower cell =
-    case cell of
+hasZeroPower (Cell _ specificState) =
+    case specificState of
         ZeroPowerCell _ ->
             True
 
@@ -207,8 +200,8 @@ hasZeroSurroundingPower =
 
 
 isMonster : Cell -> Bool
-isMonster cell =
-    case cell of
+isMonster (Cell _ specificState) =
+    case specificState of
         ZeroPowerCell _ ->
             False
 
@@ -217,8 +210,8 @@ isMonster cell =
 
 
 isRevealed : Cell -> Bool
-isRevealed cell =
-    case cell of
+isRevealed (Cell _ specificState) =
+    case specificState of
         ZeroPowerCell state ->
             state.isRevealed
 
@@ -237,8 +230,8 @@ isRevealed cell =
 {-| Determines whether touching the cell will have any effect.
 -}
 isTouchable : Cell -> Bool
-isTouchable cell =
-    case cell of
+isTouchable (Cell _ specificState) =
+    case specificState of
         ZeroPowerCell state ->
             not <| state.isRevealed
 
@@ -247,8 +240,8 @@ isTouchable cell =
 
 
 getPower : Cell -> Power
-getPower cell =
-    case cell of
+getPower (Cell _ specificState) =
+    case specificState of
         ZeroPowerCell _ ->
             Tagged.tag 0
 
@@ -257,55 +250,56 @@ getPower cell =
 
 
 toDisplayedValue : Cell -> String
-toDisplayedValue cell =
-    case cell of
-        ZeroPowerCell state ->
-            if state.isRevealed then
-                if state.surroundingPower |> Tagged.Extra.is ((==) 0) then
-                    ""
+toDisplayedValue (Cell commonState specificState) =
+    let
+        betToString =
+            Maybe.map toString >> Maybe.withDefault ""
+
+        surroundingPowerToString =
+            Tagged.untag >> toString
+    in
+        case specificState of
+            ZeroPowerCell state ->
+                if state.isRevealed then
+                    if commonState.surroundingPower |> Tagged.Extra.is ((==) 0) then
+                        ""
+                    else
+                        surroundingPowerToString commonState.surroundingPower
                 else
-                    state.surroundingPower |> Tagged.untag |> toString
-            else
-                getBet cell |> Maybe.map toString |> Maybe.withDefault ""
+                    betToString commonState.bet
 
-        MonsterCell state ->
-            case state.displayedValue of
-                None ->
-                    getBet cell |> Maybe.map toString |> Maybe.withDefault ""
+            MonsterCell state ->
+                case state.displayedValue of
+                    None ->
+                        betToString commonState.bet
 
-                Power ->
-                    state.power |> Tagged.untag |> toString
+                    Power ->
+                        state.power |> Tagged.untag |> toString
 
-                SurroundingPower ->
-                    state.surroundingPower |> Tagged.untag |> toString
+                    SurroundingPower ->
+                        surroundingPowerToString commonState.surroundingPower
 
 
 describeDisplayedValue : Cell -> String
-describeDisplayedValue cell =
-    case cell of
-        ZeroPowerCell state ->
-            if state.isRevealed then
-                "surroundingPower"
-            else
-                case getBet cell of
-                    Just _ ->
-                        "bet"
-
-                    Nothing ->
-                        "none"
-
-        MonsterCell state ->
-            case state.displayedValue of
-                None ->
-                    case getBet cell of
-                        Just _ ->
-                            "bet"
-
-                        Nothing ->
-                            "none"
-
-                Power ->
-                    "power"
-
-                SurroundingPower ->
+describeDisplayedValue (Cell commonState specificState) =
+    let
+        betToString =
+            Maybe.map (always "bet") >> Maybe.withDefault "none"
+    in
+        case specificState of
+            ZeroPowerCell state ->
+                if state.isRevealed then
                     "surroundingPower"
+                else
+                    betToString commonState.bet
+
+            MonsterCell state ->
+                case state.displayedValue of
+                    None ->
+                        betToString commonState.bet
+
+                    Power ->
+                        "power"
+
+                    SurroundingPower ->
+                        "surroundingPower"
