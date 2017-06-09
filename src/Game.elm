@@ -5,6 +5,7 @@ module Game
         , getPlayerHp
         , getPlayerLevel
         , getPlayerXp
+        , getXpNeededForNextLevel
         , hasBeenLost
         , init
         , listCells
@@ -14,6 +15,7 @@ module Game
 import Game.Board as Board
 import Game.Cell as Cell
 import Game.Direction exposing (Direction(..))
+import Game.ExpProgression as ExpProgression
 import Game.Player as Player
 import Game.RevealNeighborsWithZeroPower
 import Game.Variant as Variant
@@ -66,6 +68,14 @@ getPlayerXp =
 getPlayerHp : State -> Int
 getPlayerHp =
     .player >> .hp >> Tagged.untag
+
+
+getXpNeededForNextLevel : State -> Maybe Int
+getXpNeededForNextLevel state =
+    Variant.get state.variantIdentifier
+        |> .expProgression
+        |> ExpProgression.getXpNeededForNextLevel state.player.level state.player.xp
+        |> Maybe.map Tagged.untag
 
 
 hasEnded : State -> Bool

@@ -160,12 +160,13 @@ view model =
                 "Seed: "
                     ++ toString model.initialNumber
                     ++ " Lvl: "
-                    ++ (toString <|
-                            Game.getPlayerLevel model.game
-                       )
+                    ++ (toString <| Game.getPlayerLevel model.game)
                     ++ " XP: "
-                    ++ (toString <|
-                            Game.getPlayerXp model.game
+                    ++ (toString <| Game.getPlayerXp model.game)
+                    ++ " Next Lvl: "
+                    ++ (Game.getXpNeededForNextLevel model.game
+                            |> Maybe.map toString
+                            |> Maybe.withDefault ""
                        )
                     ++ " HP: "
                     ++ (toString <| Game.getPlayerHp model.game)
