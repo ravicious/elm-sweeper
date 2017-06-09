@@ -52,17 +52,17 @@ reduceHpIfCellIsMorePowerful : Cell.Cell -> Player -> Player
 reduceHpIfCellIsMorePowerful cell player =
     if Tagged.untag player.level < (Tagged.untag <| Cell.getPower cell) then
         let
-            currentHpMinusCellPower =
-                (-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getPower cell)
+            currentHpMinusCellHitPower =
+                (-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getHitPower cell)
         in
-        { player | hp = Tagged.tag <| max currentHpMinusCellPower 0 }
+        { player | hp = Tagged.tag <| max currentHpMinusCellHitPower 0 }
     else
         player
 
 
 addXp : Cell.Cell -> Player -> Player
 addXp cell player =
-    { player | xp = Tagged.map ((+) (cell |> Cell.getPower |> Tagged.untag)) player.xp }
+    { player | xp = Tagged.map ((+) (Tagged.untag <| Cell.getXpReward cell)) player.xp }
 
 
 increaseLvlIfEnoughXp : ExpProgression.ExpProgression -> Player -> Player

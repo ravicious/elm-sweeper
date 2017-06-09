@@ -3,7 +3,9 @@ module Game.Cell
         ( Cell
         , changeBet
         , describeDisplayedValue
+        , getHitPower
         , getPower
+        , getXpReward
         , hasZeroPower
         , hasZeroSurroundingPower
         , init
@@ -17,6 +19,7 @@ module Game.Cell
         )
 
 import Game.Direction exposing (Direction(..))
+import Game.ExpProgression exposing (Xp)
 import Tagged exposing (Tagged)
 import Tagged.Extra
 
@@ -247,6 +250,31 @@ getPower (Cell _ specificState) =
 
         MonsterCell state ->
             state.power
+
+
+getHitPower : Cell -> Power
+getHitPower =
+    getPower
+        >> Tagged.map
+            (\power ->
+                if power > 1 then
+                    power * (power - 1)
+                else
+                    power
+            )
+
+
+getXpReward : Cell -> Xp
+getXpReward =
+    getPower
+        >> Tagged.map
+            (\power ->
+                if power > 2 then
+                    2 ^ (power - 1)
+                else
+                    power
+            )
+        >> Tagged.retag
 
 
 toDisplayedValue : Cell -> String
