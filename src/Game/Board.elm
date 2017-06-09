@@ -1,27 +1,27 @@
 module Game.Board
     exposing
-        ( State
-        , CellIndex
+        ( CellIndex
+        , State
+        , changeBet
+        , getNeighborIndexes
+        , indexToCell
+        , indexToPoint
         , init
         , initWithZeroPower
         , listCells
-        , touchCell
-        , revealCell
-        , changeBet
-        , indexToPoint
-        , indexToCell
         , pointToIndex
-        , getNeighborIndexes
+        , revealCell
+        , touchCell
         )
 
 import Dict exposing (Dict)
+import Game.Cell as Cell
+import Game.Direction exposing (Direction(..))
+import Game.Point as Point exposing (Point)
+import Game.Variant as Variant exposing (Variant)
+import Maybe.Extra
 import Random
 import Random.List
-import Maybe.Extra
-import Game.Cell as Cell
-import Game.Variant as Variant exposing (Variant)
-import Game.Point as Point exposing (Point)
-import Game.Direction exposing (Direction(..))
 
 
 type alias CellIndex =
@@ -81,7 +81,7 @@ initCells variant seed =
                 |> List.concatMap (\( power, n ) -> List.repeat n (Cell.init power))
 
         numberOfZeroCells =
-            totalNumberOfCells - (List.length cellsFromConfiguration)
+            totalNumberOfCells - List.length cellsFromConfiguration
 
         zeroCells =
             List.repeat numberOfZeroCells (Cell.init 0)
@@ -91,9 +91,9 @@ initCells variant seed =
                 ++ zeroCells
 
         ( shuffledCells, _ ) =
-            Random.List.shuffle cells |> (flip Random.step) seed
+            Random.List.shuffle cells |> flip Random.step seed
     in
-        listOfCellsToDictOfCells shuffledCells
+    listOfCellsToDictOfCells shuffledCells
 
 
 listOfCellsToDictOfCells : List Cell.Cell -> Cells
@@ -112,7 +112,7 @@ calculateSurroundingPowerForCell state index cell =
         neighbors =
             getNeighbors state index
     in
-        Cell.setSurroundingPowerFromNeighbors neighbors cell
+    Cell.setSurroundingPowerFromNeighbors neighbors cell
 
 
 
@@ -141,7 +141,7 @@ transformNeighborPoints f state index =
         |> List.foldr
             (\point xs ->
                 f state point
-                    |> Maybe.map ((flip (::)) xs)
+                    |> Maybe.map (flip (::) xs)
                     |> Maybe.withDefault xs
             )
             []
@@ -171,12 +171,12 @@ indexToPoint state index =
     if isValidIndex state index then
         let
             x =
-                (index % state.columns)
+                index % state.columns
 
             y =
-                (index // state.columns)
+                index // state.columns
         in
-            Just <| Point x y
+        Just <| Point x y
     else
         Nothing
 
@@ -200,15 +200,15 @@ transformPoint transformX transformY state point =
         newPoint =
             Point.transform transformX transformY point
     in
-        if isValidPoint state newPoint then
-            Just newPoint
-        else
-            Nothing
+    if isValidPoint state newPoint then
+        Just newPoint
+    else
+        Nothing
 
 
 isValidIndex : State -> CellIndex -> Bool
 isValidIndex state index =
-    index < (Dict.size state.cells)
+    index < Dict.size state.cells
 
 
 isValidPoint : State -> Point -> Bool

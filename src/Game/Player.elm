@@ -1,9 +1,9 @@
-module Game.Player exposing (Player, init, touchCell, isDead)
+module Game.Player exposing (Player, init, isDead, touchCell)
 
-import Tagged exposing (Tagged)
-import Tagged.Extra
 import Game.Cell as Cell
 import Game.ExpProgression as ExpProgression
+import Tagged exposing (Tagged)
+import Tagged.Extra
 
 
 type HpTag
@@ -50,12 +50,12 @@ touchCell expProgression cell player =
 
 reduceHpIfCellIsMorePowerful : Cell.Cell -> Player -> Player
 reduceHpIfCellIsMorePowerful cell player =
-    if (Tagged.untag player.level) < (Tagged.untag <| Cell.getPower cell) then
+    if Tagged.untag player.level < (Tagged.untag <| Cell.getPower cell) then
         let
             currentHpMinusCellPower =
-                ((-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getPower cell))
+                (-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getPower cell)
         in
-            { player | hp = Tagged.tag <| max currentHpMinusCellPower 0 }
+        { player | hp = Tagged.tag <| max currentHpMinusCellPower 0 }
     else
         player
 

@@ -40,6 +40,6 @@ isEnoughXpForNextLevel expProgression level currentXp =
     getXpNeededForNextLevel level expProgression
         |> Maybe.map
             (\xpNeededForNextLevel ->
-                Tagged.map2 ((>=)) currentXp xpNeededForNextLevel |> Tagged.untag
+                Tagged.map2 (>=) currentXp xpNeededForNextLevel |> Tagged.untag
             )
         |> Maybe.withDefault False

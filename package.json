@@ -1,7 +1,7 @@
 {
   "devDependencies": {
     "elm": "^0.18.0",
-    "elm-format": "^0.6.1-alpha",
+    "elm-format": "^0.7.0-exp",
     "elm-live": "^2.7.4",
     "elm-test": "^0.18.2"
   }

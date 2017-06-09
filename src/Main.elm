@@ -1,18 +1,14 @@
 port module Main exposing (main)
 
+import Game
+import Game.Board
+import Game.Cell as Cell
+import Game.Direction exposing (Direction(..))
+import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Random
-
-
--- Our imports
-
-import Game
-import Game.Variant
-import Game.Board
-import Game.Cell as Cell
-import Game.Direction exposing (Direction(..))
 
 
 renderCells : Game.State -> List (Html.Html Msg)
@@ -27,21 +23,21 @@ renderCells game =
                     displayedValueClass =
                         "grid-cell--displayed-value-" ++ displayedValueDescriptor
                 in
-                    div
-                        [ classList
-                            [ ( "grid-cell", True )
-                            , ( displayedValueClass, True )
-                            , ( "grid-cell--zero-power", (Cell.isRevealed cell) && (Cell.hasZeroPower cell) )
-                            , ( "grid-cell--zero-surrounding-power", (Cell.isRevealed cell) && (Cell.hasZeroSurroundingPower cell) )
-                            , ( "grid-cell--monster", (Cell.isRevealed cell) && (Cell.isMonster cell) )
-                            , ( "is-revealed", Cell.isRevealed cell )
-                            , ( "is-touchable", Cell.isTouchable cell )
-                            , ( "is-not-touchable", not <| Cell.isTouchable cell )
-                            ]
-                        , onClick (ClickCell index)
-                        , attribute "data-index" (toString index)
+                div
+                    [ classList
+                        [ ( "grid-cell", True )
+                        , ( displayedValueClass, True )
+                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
+                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
+                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
+                        , ( "is-revealed", Cell.isRevealed cell )
+                        , ( "is-touchable", Cell.isTouchable cell )
+                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
                         ]
-                        [ text <| Cell.toDisplayedValue cell ]
+                    , onClick (ClickCell index)
+                    , attribute "data-index" (toString index)
+                    ]
+                    [ text <| Cell.toDisplayedValue cell ]
             )
 
 
@@ -78,10 +74,10 @@ init flags =
         seed =
             Random.initialSeed flags.randomNumber
     in
-        { game = Game.init Game.Variant.SixteenByThirty seed
-        , initialNumber = flags.randomNumber
-        }
-            ! []
+    { game = Game.init Game.Variant.SixteenByThirty seed
+    , initialNumber = flags.randomNumber
+    }
+        ! []
 
 
 port initializeWithSeed : (Int -> msg) -> Sub msg
@@ -128,11 +124,12 @@ update msg model =
                 newModel =
                     { model | game = Game.update (Game.TouchCell index) model.game }
             in
-                newModel
-                    ! if Game.hasBeenLost newModel.game then
-                        [ gameHasBeenLost () ]
-                      else
-                        []
+            newModel
+                ! (if Game.hasBeenLost newModel.game then
+                    [ gameHasBeenLost () ]
+                   else
+                    []
+                  )
 
         KeyPressedOverCell ( index, keyCode ) ->
             keyCodeToDirection keyCode
@@ -160,7 +157,7 @@ view model =
         , span []
             [ text <|
                 "Seed: "
-                    ++ (toString model.initialNumber)
+                    ++ toString model.initialNumber
                     ++ " Lvl: "
                     ++ (toString <|
                             Game.getPlayerLevel model.game

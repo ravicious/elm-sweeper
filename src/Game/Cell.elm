@@ -1,24 +1,24 @@
 module Game.Cell
     exposing
         ( Cell
-        , init
-        , setSurroundingPowerFromNeighbors
-        , touch
-        , reveal
         , changeBet
+        , describeDisplayedValue
         , getPower
         , hasZeroPower
         , hasZeroSurroundingPower
+        , init
         , isMonster
         , isRevealed
         , isTouchable
+        , reveal
+        , setSurroundingPowerFromNeighbors
         , toDisplayedValue
-        , describeDisplayedValue
+        , touch
         )
 
+import Game.Direction exposing (Direction(..))
 import Tagged exposing (Tagged)
 import Tagged.Extra
-import Game.Direction exposing (Direction(..))
 
 
 type PowerTag
@@ -92,7 +92,7 @@ init power =
                     , displayedValue = None
                     }
     in
-        Cell commonState specificState
+    Cell commonState specificState
 
 
 setSurroundingPowerFromNeighbors : List Cell -> Cell -> Cell
@@ -107,7 +107,7 @@ setSurroundingPowerFromNeighbors neighbors (Cell commonState specificState) =
                     (Tagged.tag 0)
                 |> Tagged.retag
     in
-        Cell { commonState | surroundingPower = surroundingPower } specificState
+    Cell { commonState | surroundingPower = surroundingPower } specificState
 
 
 getSurroundingPower : Cell -> SurroundingPower
@@ -140,7 +140,7 @@ touch (Cell commonState specificState) =
                             SurroundingPower ->
                                 Power
                 in
-                    MonsterCell { state | displayedValue = nextDisplayedValue }
+                MonsterCell { state | displayedValue = nextDisplayedValue }
 
 
 reveal : Cell -> Cell
@@ -181,7 +181,7 @@ changeBet ( minBet, maxBet ) direction (Cell commonState specificState) =
                         Nothing ->
                             Just minBet
     in
-        Cell { commonState | bet = newBet } specificState
+    Cell { commonState | bet = newBet } specificState
 
 
 hasZeroPower : Cell -> Bool
@@ -258,26 +258,26 @@ toDisplayedValue (Cell commonState specificState) =
         surroundingPowerToString =
             Tagged.untag >> toString
     in
-        case specificState of
-            ZeroPowerCell state ->
-                if state.isRevealed then
-                    if commonState.surroundingPower |> Tagged.Extra.is ((==) 0) then
-                        ""
-                    else
-                        surroundingPowerToString commonState.surroundingPower
+    case specificState of
+        ZeroPowerCell state ->
+            if state.isRevealed then
+                if commonState.surroundingPower |> Tagged.Extra.is ((==) 0) then
+                    ""
                 else
+                    surroundingPowerToString commonState.surroundingPower
+            else
+                betToString commonState.bet
+
+        MonsterCell state ->
+            case state.displayedValue of
+                None ->
                     betToString commonState.bet
 
-            MonsterCell state ->
-                case state.displayedValue of
-                    None ->
-                        betToString commonState.bet
+                Power ->
+                    state.power |> Tagged.untag |> toString
 
-                    Power ->
-                        state.power |> Tagged.untag |> toString
-
-                    SurroundingPower ->
-                        surroundingPowerToString commonState.surroundingPower
+                SurroundingPower ->
+                    surroundingPowerToString commonState.surroundingPower
 
 
 describeDisplayedValue : Cell -> String
@@ -286,20 +286,20 @@ describeDisplayedValue (Cell commonState specificState) =
         betToString =
             Maybe.map (always "bet") >> Maybe.withDefault "none"
     in
-        case specificState of
-            ZeroPowerCell state ->
-                if state.isRevealed then
-                    "surroundingPower"
-                else
+    case specificState of
+        ZeroPowerCell state ->
+            if state.isRevealed then
+                "surroundingPower"
+            else
+                betToString commonState.bet
+
+        MonsterCell state ->
+            case state.displayedValue of
+                None ->
                     betToString commonState.bet
 
-            MonsterCell state ->
-                case state.displayedValue of
-                    None ->
-                        betToString commonState.bet
+                Power ->
+                    "power"
 
-                    Power ->
-                        "power"
-
-                    SurroundingPower ->
-                        "surroundingPower"
+                SurroundingPower ->
+                    "surroundingPower"

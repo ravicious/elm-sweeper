@@ -1,9 +1,9 @@
 module Game.RevealNeighborsWithZeroPower exposing (run)
 
-import Set exposing (Set)
-import List.Extra
 import Game.Board as Board exposing (CellIndex)
 import Game.Cell as Cell
+import List.Extra
+import Set exposing (Set)
 
 
 -- State & operations on state
@@ -124,5 +124,5 @@ run index boardState =
             initScanState neighborIndexes
                 |> scan boardState
     in
-        Set.toList scanState.toReveal
-            |> List.foldr Board.revealCell boardState
+    Set.toList scanState.toReveal
+        |> List.foldr Board.revealCell boardState
