@@ -31,6 +31,7 @@ renderCells game =
                         , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
                         , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
                         , ( "is-revealed", Cell.isRevealed cell )
+                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
                         , ( "is-touchable", Cell.isTouchable cell )
                         , ( "is-not-touchable", not <| Cell.isTouchable cell )
                         ]
