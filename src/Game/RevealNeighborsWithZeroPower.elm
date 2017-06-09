@@ -88,7 +88,7 @@ addNeighborsToVisitIfCellHasZeroSurroundingPower =
         \boardState index cell scanState ->
             if Cell.hasZeroSurroundingPower cell then
                 Board.getNeighborIndexes boardState index
-                    |> List.foldr addIndexToVisitIfNotVisited scanState
+                    |> List.foldl addIndexToVisitIfNotVisited scanState
             else
                 scanState
 
@@ -125,4 +125,4 @@ run index boardState =
                 |> scan boardState
     in
     Set.toList scanState.toReveal
-        |> List.foldr Board.revealCell boardState
+        |> List.foldl Board.revealCell boardState

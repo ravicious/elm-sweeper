@@ -100,7 +100,7 @@ setSurroundingPowerFromNeighbors neighbors (Cell commonState specificState) =
     let
         surroundingPower =
             neighbors
-                |> List.foldr
+                |> List.foldl
                     (\neighbor sumOfPower ->
                         getPower neighbor |> Tagged.map2 (+) sumOfPower
                     )

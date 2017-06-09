@@ -138,7 +138,7 @@ getNeighborIndexes =
 transformNeighborPoints : (State -> Point -> Maybe a) -> State -> CellIndex -> List a
 transformNeighborPoints f state index =
     indexToNeighborPoints state index
-        |> List.foldr
+        |> List.foldl
             (\point xs ->
                 f state point
                     |> Maybe.map (flip (::) xs)
