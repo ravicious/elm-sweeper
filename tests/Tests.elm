@@ -1,13 +1,9 @@
 module Tests exposing (..)
 
-import Test exposing (..)
 import Expect
 import Fuzz
-
-
--- Our imports
-
 import Game.Board as Board
+import Test exposing (..)
 
 
 all : Test
@@ -51,14 +47,14 @@ cellOperationsTests =
                     maybeBoard =
                         Board.initWithZeroPower rows columns
                 in
-                    case maybeBoard of
-                        Just board ->
-                            Expect.equal
-                                (Just index)
-                                (Board.indexToPoint board index
-                                    |> Maybe.andThen (Board.pointToIndex board)
-                                )
+                case maybeBoard of
+                    Just board ->
+                        Expect.equal
+                            (Just index)
+                            (Board.indexToPoint board index
+                                |> Maybe.andThen (Board.pointToIndex board)
+                            )
 
-                        Nothing ->
-                            Expect.fail "Board.initWithZeroPower returned Nothing"
+                    Nothing ->
+                        Expect.fail "Board.initWithZeroPower returned Nothing"
         ]

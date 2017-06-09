@@ -26,9 +26,13 @@ body {
   align-items: center;
 }
 
-.grid-cell.is-touchable:hover {
+.grid-cell.is-not-revealed {
   background-color: lightgrey;
+}
+
+.grid-cell.is-touchable:hover {
   cursor: pointer;
+  opacity: 0.5;
 }
 
 .grid-cell.is-not-touchable:hover {

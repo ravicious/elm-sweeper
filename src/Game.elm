@@ -1,24 +1,26 @@
 module Game
     exposing
-        ( State
-        , Action(..)
-        , init
-        , listCells
+        ( Action(..)
+        , State
+        , getPlayerHp
         , getPlayerLevel
         , getPlayerXp
-        , getPlayerHp
+        , getXpNeededForNextLevel
         , hasBeenLost
+        , init
+        , listCells
         , update
         )
 
-import Random
-import Tagged
-import Game.Cell as Cell
 import Game.Board as Board
-import Game.Variant as Variant
+import Game.Cell as Cell
+import Game.Direction exposing (Direction(..))
+import Game.ExpProgression as ExpProgression
 import Game.Player as Player
 import Game.RevealNeighborsWithZeroPower
-import Game.Direction exposing (Direction(..))
+import Game.Variant as Variant
+import Random
+import Tagged
 
 
 type alias State =
@@ -46,11 +48,11 @@ init identifier seed =
         variant =
             Variant.get identifier
     in
-        { board = Board.init variant seed
-        , player = Player.init
-        , variantIdentifier = identifier
-        , status = InProgress
-        }
+    { board = Board.init variant seed
+    , player = Player.init
+    , variantIdentifier = identifier
+    , status = InProgress
+    }
 
 
 getPlayerLevel : State -> Int
@@ -66,6 +68,14 @@ getPlayerXp =
 getPlayerHp : State -> Int
 getPlayerHp =
     .player >> .hp >> Tagged.untag
+
+
+getXpNeededForNextLevel : State -> Maybe Int
+getXpNeededForNextLevel state =
+    Variant.get state.variantIdentifier
+        |> .expProgression
+        |> ExpProgression.getXpNeededForNextLevel state.player.level state.player.xp
+        |> Maybe.map Tagged.untag
 
 
 hasEnded : State -> Bool
@@ -129,39 +139,39 @@ update action state =
                     variant =
                         Variant.get state.variantIdentifier
                 in
-                    Board.indexToCell state.board index
-                        |> Maybe.map
-                            (\cell ->
-                                { state
-                                    | board =
-                                        Board.touchCell index state.board
-                                            |> revealNeighborsWithZeroPowerIfZeroSurroundingPower
-                                                index
-                                    , player =
-                                        if not <| Cell.isRevealed cell then
-                                            Player.touchCell
-                                                variant.expProgression
-                                                cell
-                                                state.player
-                                        else
+                Board.indexToCell state.board index
+                    |> Maybe.map
+                        (\cell ->
+                            { state
+                                | board =
+                                    Board.touchCell index state.board
+                                        |> revealNeighborsWithZeroPowerIfZeroSurroundingPower
+                                            index
+                                , player =
+                                    if not <| Cell.isRevealed cell then
+                                        Player.touchCell
+                                            variant.expProgression
+                                            cell
                                             state.player
-                                }
-                                    |> endGameIfPlayerIsDead
-                            )
-                        |> Maybe.withDefault state
+                                    else
+                                        state.player
+                            }
+                                |> endGameIfPlayerIsDead
+                        )
+                    |> Maybe.withDefault state
 
             ChangeBet direction index ->
                 let
                     variant =
                         Variant.get state.variantIdentifier
                 in
-                    { state
-                        | board =
-                            Board.changeBet
-                                ( variant.minPower, variant.maxPower )
-                                direction
-                                index
-                                state.board
-                    }
+                { state
+                    | board =
+                        Board.changeBet
+                            ( variant.minPower, variant.maxPower )
+                            direction
+                            index
+                            state.board
+                }
     else
         state

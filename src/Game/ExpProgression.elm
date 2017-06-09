@@ -1,4 +1,12 @@
-module Game.ExpProgression exposing (ExpProgression, Level, Xp, init, isEnoughXpForNextLevel)
+module Game.ExpProgression
+    exposing
+        ( ExpProgression
+        , Level
+        , Xp
+        , getXpNeededForNextLevel
+        , init
+        , isEnoughXpForNextLevel
+        )
 
 import Tagged exposing (Tagged)
 import Tagged.Dict as TaggedDict exposing (TaggedDict)
@@ -30,16 +38,22 @@ init levelAndXpNeededForNextLevel =
         |> TaggedDict.map (\_ xpNeededForNextLevel -> Tagged.tag xpNeededForNextLevel)
 
 
-getXpNeededForNextLevel : Level -> ExpProgression -> Maybe Xp
-getXpNeededForNextLevel =
+getXpNeededForNextLevel : Level -> Xp -> ExpProgression -> Maybe Xp
+getXpNeededForNextLevel level currentXp expProgression =
+    getThresholdForNextLevel level expProgression
+        |> Maybe.map (\threshold -> Tagged.map2 (-) threshold currentXp)
+
+
+getThresholdForNextLevel : Level -> ExpProgression -> Maybe Xp
+getThresholdForNextLevel =
     TaggedDict.get
 
 
 isEnoughXpForNextLevel : ExpProgression -> Level -> Xp -> Bool
 isEnoughXpForNextLevel expProgression level currentXp =
-    getXpNeededForNextLevel level expProgression
+    getThresholdForNextLevel level expProgression
         |> Maybe.map
             (\xpNeededForNextLevel ->
-                Tagged.map2 ((>=)) currentXp xpNeededForNextLevel |> Tagged.untag
+                Tagged.map2 (>=) currentXp xpNeededForNextLevel |> Tagged.untag
             )
         |> Maybe.withDefault False
