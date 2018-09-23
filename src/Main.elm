@@ -171,4 +171,8 @@ view model =
                     ++ " HP: "
                     ++ (toString <| Game.getPlayerHp model.game)
             ]
+        , div [ class "bet-panel" ]
+            [ button [ type_ "button" ] [ text "+" ]
+            , button [ type_ "button" ] [ text "-" ]
+            ]
         ]

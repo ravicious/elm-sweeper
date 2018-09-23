@@ -4,6 +4,13 @@ body {
   background-color: white;
 }
 
+.elm-mini-controls {
+  right: initial !important;
+  left: 6px !important;
+}
+
+/* Grid */
+
 .grid {
   display: grid;
   justify-items: stretch;
@@ -58,4 +65,12 @@ body {
 
 .grid-cell--zero-surrounding-power.is-revealed {
   border: 1px solid whitesmoke;
+}
+
+/* Bet panel */
+
+.bet-panel {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
 }
