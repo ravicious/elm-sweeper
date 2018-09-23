@@ -41,6 +41,7 @@ touchCell expProgression cell player =
         |> (\playerAfterReducingHp ->
                 if isDead playerAfterReducingHp then
                     playerAfterReducingHp
+
                 else
                     playerAfterReducingHp
                         |> addXp cell
@@ -56,6 +57,7 @@ reduceHpIfCellIsMorePowerful cell player =
                 (-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getHitPower cell)
         in
         { player | hp = Tagged.tag <| max currentHpMinusCellHitPower 0 }
+
     else
         player
 
@@ -69,5 +71,6 @@ increaseLvlIfEnoughXp : ExpProgression.ExpProgression -> Player -> Player
 increaseLvlIfEnoughXp expProgression player =
     if ExpProgression.isEnoughXpForNextLevel expProgression player.level player.xp then
         { player | level = Tagged.map ((+) 1) player.level }
+
     else
         player

@@ -6,6 +6,7 @@ import List.Extra
 import Set exposing (Set)
 
 
+
 -- State & operations on state
 
 
@@ -28,6 +29,7 @@ addIndexToVisitIfNotVisited : CellIndex -> ScanState -> ScanState
 addIndexToVisitIfNotVisited index state =
     if hasIndexBeenVisited index state then
         state
+
     else
         { state | toVisit = Set.insert index state.toVisit }
 
@@ -74,6 +76,7 @@ addIndexToRevealIfShouldBeRevealed =
         \boardState index cell scanState ->
             if Cell.hasZeroPower cell then
                 addIndexToReveal index scanState
+
             else
                 scanState
 
@@ -89,6 +92,7 @@ addNeighborsToVisitIfCellHasZeroSurroundingPower =
             if Cell.hasZeroSurroundingPower cell then
                 Board.getNeighborIndexes boardState index
                     |> List.foldl addIndexToVisitIfNotVisited scanState
+
             else
                 scanState
 

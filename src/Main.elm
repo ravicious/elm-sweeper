@@ -1,5 +1,6 @@
 port module Main exposing (main)
 
+import Browser
 import Game
 import Game.Board
 import Game.Cell as Cell
@@ -36,7 +37,7 @@ renderCells game =
                         , ( "is-not-touchable", not <| Cell.isTouchable cell )
                         ]
                     , onClick (ClickCell index)
-                    , attribute "data-index" (toString index)
+                    , attribute "data-index" (String.fromInt index)
                     ]
                     [ text <| Cell.toDisplayedValue cell ]
             )
@@ -44,7 +45,7 @@ renderCells game =
 
 main : Program Flags Model Msg
 main =
-    Html.programWithFlags
+    Browser.element
         { init = init
         , view = view
         , update = update
@@ -75,10 +76,11 @@ init flags =
         seed =
             Random.initialSeed flags.randomNumber
     in
-    { game = Game.init Game.Variant.SixteenByThirty seed
-    , initialNumber = flags.randomNumber
-    }
-        ! []
+    ( { game = Game.init Game.Variant.SixteenByThirty seed
+      , initialNumber = flags.randomNumber
+      }
+    , Cmd.none
+    )
 
 
 port initializeWithSeed : (Int -> msg) -> Sub msg
@@ -125,26 +127,33 @@ update msg model =
                 newModel =
                     { model | game = Game.update (Game.TouchCell index) model.game }
             in
-            newModel
-                ! (if Game.hasBeenLost newModel.game then
+            ( newModel
+            , Cmd.batch
+                (if Game.hasBeenLost newModel.game then
                     [ gameHasBeenLost () ]
-                   else
+
+                 else
                     []
-                  )
+                )
+            )
 
         KeyPressedOverCell ( index, keyCode ) ->
             keyCodeToDirection keyCode
                 |> Maybe.map
                     (\direction ->
-                        { model
+                        ( { model
                             | game =
                                 Game.update
                                     (Game.ChangeBet direction index)
                                     model.game
-                        }
-                            ! []
+                          }
+                        , Cmd.none
+                        )
                     )
-                |> Maybe.withDefault (model ! [])
+                |> Maybe.withDefault
+                    ( model
+                    , Cmd.none
+                    )
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
@@ -158,17 +167,17 @@ view model =
         , span []
             [ text <|
                 "Seed: "
-                    ++ toString model.initialNumber
+                    ++ String.fromInt model.initialNumber
                     ++ " Lvl: "
-                    ++ (toString <| Game.getPlayerLevel model.game)
+                    ++ (String.fromInt <| Game.getPlayerLevel model.game)
                     ++ " XP: "
-                    ++ (toString <| Game.getPlayerXp model.game)
+                    ++ (String.fromInt <| Game.getPlayerXp model.game)
                     ++ " Next Lvl: "
                     ++ (Game.getXpNeededForNextLevel model.game
-                            |> Maybe.map toString
+                            |> Maybe.map String.fromInt
                             |> Maybe.withDefault ""
                        )
                     ++ " HP: "
-                    ++ (toString <| Game.getPlayerHp model.game)
+                    ++ (String.fromInt <| Game.getPlayerHp model.game)
             ]
         ]

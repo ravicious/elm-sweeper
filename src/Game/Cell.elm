@@ -1,22 +1,21 @@
-module Game.Cell
-    exposing
-        ( Cell
-        , changeBet
-        , describeDisplayedValue
-        , getHitPower
-        , getPower
-        , getXpReward
-        , hasZeroPower
-        , hasZeroSurroundingPower
-        , init
-        , isMonster
-        , isRevealed
-        , isTouchable
-        , reveal
-        , setSurroundingPowerFromNeighbors
-        , toDisplayedValue
-        , touch
-        )
+module Game.Cell exposing
+    ( Cell
+    , changeBet
+    , describeDisplayedValue
+    , getHitPower
+    , getPower
+    , getXpReward
+    , hasZeroPower
+    , hasZeroSurroundingPower
+    , init
+    , isMonster
+    , isRevealed
+    , isTouchable
+    , reveal
+    , setSurroundingPowerFromNeighbors
+    , toDisplayedValue
+    , touch
+    )
 
 import Game.Direction exposing (Direction(..))
 import Game.ExpProgression exposing (Xp)
@@ -89,6 +88,7 @@ init power =
                 ZeroPowerCell
                     { isRevealed = False
                     }
+
             else
                 MonsterCell
                     { power = Tagged.tag power
@@ -167,6 +167,7 @@ changeBet ( minBet, maxBet ) direction (Cell commonState specificState) =
                         Just currentBet ->
                             if currentBet == minBet then
                                 Nothing
+
                             else
                                 Just <| currentBet - 1
 
@@ -178,6 +179,7 @@ changeBet ( minBet, maxBet ) direction (Cell commonState specificState) =
                         Just currentBet ->
                             if currentBet == maxBet then
                                 Nothing
+
                             else
                                 Just <| currentBet + 1
 
@@ -259,6 +261,7 @@ getHitPower =
             (\power ->
                 if power > 1 then
                     power * (power - 1)
+
                 else
                     power
             )
@@ -271,6 +274,7 @@ getXpReward =
             (\power ->
                 if power > 2 then
                     2 ^ (power - 1)
+
                 else
                     power
             )
@@ -281,18 +285,20 @@ toDisplayedValue : Cell -> String
 toDisplayedValue (Cell commonState specificState) =
     let
         betToString =
-            Maybe.map toString >> Maybe.withDefault ""
+            Maybe.map String.fromInt >> Maybe.withDefault ""
 
         surroundingPowerToString =
-            Tagged.untag >> toString
+            Tagged.untag >> String.fromInt
     in
     case specificState of
         ZeroPowerCell state ->
             if state.isRevealed then
                 if commonState.surroundingPower |> Tagged.Extra.is ((==) 0) then
                     ""
+
                 else
                     surroundingPowerToString commonState.surroundingPower
+
             else
                 betToString commonState.bet
 
@@ -302,7 +308,7 @@ toDisplayedValue (Cell commonState specificState) =
                     betToString commonState.bet
 
                 Power ->
-                    state.power |> Tagged.untag |> toString
+                    state.power |> Tagged.untag |> String.fromInt
 
                 SurroundingPower ->
                     surroundingPowerToString commonState.surroundingPower
@@ -318,6 +324,7 @@ describeDisplayedValue (Cell commonState specificState) =
         ZeroPowerCell state ->
             if state.isRevealed then
                 "surroundingPower"
+
             else
                 betToString commonState.bet
 
