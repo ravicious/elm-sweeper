@@ -1,18 +1,17 @@
-module Game.Board
-    exposing
-        ( CellIndex
-        , State
-        , changeBet
-        , getNeighborIndexes
-        , indexToCell
-        , indexToPoint
-        , init
-        , initWithZeroPower
-        , listCells
-        , pointToIndex
-        , revealCell
-        , touchCell
-        )
+module Game.Board exposing
+    ( CellIndex
+    , State
+    , changeBet
+    , getNeighborIndexes
+    , indexToCell
+    , indexToPoint
+    , init
+    , initWithZeroPower
+    , listCells
+    , pointToIndex
+    , revealCell
+    , touchCell
+    )
 
 import Dict exposing (Dict)
 import Game.Cell as Cell
@@ -66,6 +65,7 @@ initWithZeroPower rows columns =
             , columns = columns
             , cells = List.repeat (rows * columns) (Cell.init 0) |> listOfCellsToDictOfCells
             }
+
     else
         Nothing
 
@@ -91,14 +91,14 @@ initCells variant seed =
                 ++ zeroCells
 
         ( shuffledCells, _ ) =
-            Random.List.shuffle cells |> flip Random.step seed
+            Random.List.shuffle cells |> (\a -> Random.step a seed)
     in
     listOfCellsToDictOfCells shuffledCells
 
 
 listOfCellsToDictOfCells : List Cell.Cell -> Cells
 listOfCellsToDictOfCells =
-    List.indexedMap (,) >> Dict.fromList
+    List.indexedMap (\a b -> ( a, b )) >> Dict.fromList
 
 
 calculateSurroundingPowerOfCells : State -> State
@@ -141,7 +141,7 @@ transformNeighborPoints f state index =
         |> List.foldl
             (\point xs ->
                 f state point
-                    |> Maybe.map (flip (::) xs)
+                    |> Maybe.map (\a -> (::) a xs)
                     |> Maybe.withDefault xs
             )
             []
@@ -171,12 +171,13 @@ indexToPoint state index =
     if isValidIndex state index then
         let
             x =
-                index % state.columns
+                modBy state.columns index
 
             y =
                 index // state.columns
         in
         Just <| Point x y
+
     else
         Nothing
 
@@ -190,6 +191,7 @@ pointToIndex : State -> Point -> Maybe CellIndex
 pointToIndex state point =
     if isValidPoint state point then
         Just <| point.x + (point.y * state.columns)
+
     else
         Nothing
 
@@ -202,6 +204,7 @@ transformPoint transformX transformY state point =
     in
     if isValidPoint state newPoint then
         Just newPoint
+
     else
         Nothing
 
@@ -220,6 +223,7 @@ updateCell : (Cell.Cell -> Cell.Cell) -> CellIndex -> State -> State
 updateCell f index state =
     if isValidIndex state index then
         { state | cells = Dict.update index (Maybe.map f) state.cells }
+
     else
         state
 
@@ -243,6 +247,7 @@ touchCell =
         \cell ->
             if Cell.isTouchable cell then
                 Cell.touch cell
+
             else
                 cell
 

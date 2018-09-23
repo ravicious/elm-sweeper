@@ -1,12 +1,11 @@
-module Game.ExpProgression
-    exposing
-        ( ExpProgression
-        , Level
-        , Xp
-        , getXpNeededForNextLevel
-        , init
-        , isEnoughXpForNextLevel
-        )
+module Game.ExpProgression exposing
+    ( ExpProgression
+    , Level
+    , Xp
+    , getXpNeededForNextLevel
+    , init
+    , isEnoughXpForNextLevel
+    )
 
 import Tagged exposing (Tagged)
 import Tagged.Dict as TaggedDict exposing (TaggedDict)

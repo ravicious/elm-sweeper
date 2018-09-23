@@ -1,16 +1,15 @@
-module Game
-    exposing
-        ( Action(..)
-        , State
-        , getPlayerHp
-        , getPlayerLevel
-        , getPlayerXp
-        , getXpNeededForNextLevel
-        , hasBeenLost
-        , init
-        , listCells
-        , update
-        )
+module Game exposing
+    ( Action(..)
+    , State
+    , getPlayerHp
+    , getPlayerLevel
+    , getPlayerXp
+    , getXpNeededForNextLevel
+    , hasBeenLost
+    , init
+    , listCells
+    , update
+    )
 
 import Game.Board as Board
 import Game.Cell as Cell
@@ -113,6 +112,7 @@ endGameIfPlayerIsDead : State -> State
 endGameIfPlayerIsDead state =
     if Player.isDead state.player then
         { state | status = Lost }
+
     else
         state
 
@@ -124,6 +124,7 @@ revealNeighborsWithZeroPowerIfZeroSurroundingPower index boardState =
             (\cell ->
                 if Cell.hasZeroSurroundingPower cell then
                     Game.RevealNeighborsWithZeroPower.run index boardState
+
                 else
                     boardState
             )
@@ -153,6 +154,7 @@ update action state =
                                             variant.expProgression
                                             cell
                                             state.player
+
                                     else
                                         state.player
                             }
@@ -173,5 +175,6 @@ update action state =
                             index
                             state.board
                 }
+
     else
         state
