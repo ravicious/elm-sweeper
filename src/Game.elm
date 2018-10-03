@@ -1,5 +1,6 @@
 module Game exposing
     ( Action(..)
+    , Event(..)
     , State
     , getPlayerHp
     , getPlayerLevel
@@ -39,6 +40,15 @@ type Status
 type Action
     = TouchCell Board.CellIndex
     | ChangeBet Direction Board.CellIndex
+
+
+type Event
+    = Nothing
+    | MonsterKilled
+    | HitByMonster
+    | LevelUp
+    | GameOver
+    | GameWon
 
 
 init : Variant.Identifier -> Random.Seed -> State
@@ -117,6 +127,32 @@ endGameIfPlayerIsDead state =
         state
 
 
+emitEvent : State -> State -> Cell.Cell -> Event
+emitEvent oldState newState oldTouchedCell =
+    if Cell.isRevealed oldTouchedCell then
+        Nothing
+
+    else if hasEnded newState then
+        if hasBeenLost newState then
+            GameOver
+
+        else
+            GameWon
+
+    else if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
+        LevelUp
+
+    else if Cell.isMonster oldTouchedCell then
+        if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
+            MonsterKilled
+
+        else
+            HitByMonster
+
+    else
+        Nothing
+
+
 revealNeighborsWithZeroPowerIfZeroSurroundingPower : Board.CellIndex -> Board.State -> Board.State
 revealNeighborsWithZeroPowerIfZeroSurroundingPower index boardState =
     Board.indexToCell boardState index
@@ -131,7 +167,7 @@ revealNeighborsWithZeroPowerIfZeroSurroundingPower index boardState =
         |> Maybe.withDefault boardState
 
 
-update : Action -> State -> State
+update : Action -> State -> ( State, Event )
 update action state =
     if not <| hasEnded state then
         case action of
@@ -143,38 +179,43 @@ update action state =
                 Board.indexToCell state.board index
                     |> Maybe.map
                         (\cell ->
-                            { state
-                                | board =
+                            let
+                                updatedBoard =
                                     Board.touchCell index state.board
-                                        |> revealNeighborsWithZeroPowerIfZeroSurroundingPower
-                                            index
-                                , player =
+                                        |> revealNeighborsWithZeroPowerIfZeroSurroundingPower index
+
+                                updatedPlayer =
                                     if not <| Cell.isRevealed cell then
-                                        Player.touchCell
-                                            variant.expProgression
-                                            cell
-                                            state.player
+                                        Player.touchCell variant.expProgression cell state.player
 
                                     else
                                         state.player
-                            }
-                                |> endGameIfPlayerIsDead
+
+                                newState =
+                                    { state | board = updatedBoard, player = updatedPlayer }
+                                        |> endGameIfPlayerIsDead
+                            in
+                            ( newState
+                            , emitEvent state newState cell
+                            )
                         )
-                    |> Maybe.withDefault state
+                    |> Maybe.withDefault ( state, Nothing )
 
             ChangeBet direction index ->
                 let
                     variant =
                         Variant.get state.variantIdentifier
                 in
-                { state
+                ( { state
                     | board =
                         Board.changeBet
                             ( variant.minPower, variant.maxPower )
                             direction
                             index
                             state.board
-                }
+                  }
+                , Nothing
+                )
 
     else
-        state
+        ( state, Nothing )

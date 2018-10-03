@@ -92,6 +92,9 @@ port keyPressedOverCell : (( Game.Board.CellIndex, String ) -> msg) -> Sub msg
 port gameHasBeenLost : () -> Cmd msg
 
 
+port playSound : String -> Cmd msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
@@ -119,34 +122,68 @@ keyCodeToDirection string =
             Nothing
 
 
+soundForEvent : Game.Event -> String
+soundForEvent event =
+    case event of
+        Game.MonsterKilled ->
+            "monster-killed"
+
+        Game.HitByMonster ->
+            "hit-by-monster"
+
+        Game.LevelUp ->
+            "level-up"
+
+        Game.GameOver ->
+            "game-over"
+
+        Game.GameWon ->
+            "game-won"
+
+        Game.Nothing ->
+            ""
+
+
+playSoundForEvent : Game.Event -> Cmd Msg
+playSoundForEvent event =
+    let
+        sound =
+            soundForEvent event
+    in
+    if String.isEmpty sound then
+        Cmd.none
+
+    else
+        playSound sound
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickCell index ->
             let
+                ( updatedGame, emitedEvent ) =
+                    Game.update (Game.TouchCell index) model.game
+
                 newModel =
-                    { model | game = Game.update (Game.TouchCell index) model.game }
+                    { model | game = updatedGame }
             in
             ( newModel
             , Cmd.batch
-                (if Game.hasBeenLost newModel.game then
-                    [ gameHasBeenLost () ]
+                [ playSoundForEvent emitedEvent
+                , if Game.hasBeenLost newModel.game then
+                    gameHasBeenLost ()
 
-                 else
-                    []
-                )
+                  else
+                    Cmd.none
+                ]
             )
 
         KeyPressedOverCell ( index, keyCode ) ->
             keyCodeToDirection keyCode
                 |> Maybe.map
                     (\direction ->
-                        ( { model
-                            | game =
-                                Game.update
-                                    (Game.ChangeBet direction index)
-                                    model.game
-                          }
+                        ( { model | game = Game.update (Game.ChangeBet direction index) model.game |> Tuple.first }
                         , Cmd.none
                         )
                     )

@@ -15,7 +15,7 @@ clean-deps:
 	rm -rf elm-stuff
 
 clean:
-	rm -f *.js
+	rm -f main.*js
 	rm -rf elm-stuff/build-artifacts
 
 server:

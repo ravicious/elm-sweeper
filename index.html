@@ -9,6 +9,7 @@
   </head>
   <body>
     <div id="app-container" class="app-container"></div>
+    <script src="howler.core.min.js"></script>
     <script src="main.min.js"></script>
     <script>
       var node = document.getElementById('app-container')
@@ -44,6 +45,10 @@
         }, 100)
       })
 
+      app.ports.playSound.subscribe(function(sampleName) {
+        sounds[sampleName].play()
+      })
+
       document.onkeydown = function(event) {
         var cell = document.querySelectorAll('.grid-cell:hover')[0]
 
@@ -55,6 +60,15 @@
 
         app.ports.keyPressedOverCell.send([index, event.code])
       }
+
+      // Preload sounds.
+      var sounds = ['game-over', 'game-won', 'hit-by-monster', 'level-up', 'monster-killed']
+        .reduce(function(acc, sampleName) {
+          acc[sampleName] = new Howl({
+            src: ['sounds/'+ sampleName + '.wav']
+          })
+          return acc
+        }, {})
     </script>
   </body>
 </html>
