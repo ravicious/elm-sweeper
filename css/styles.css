@@ -4,6 +4,8 @@ body {
   background-color: white;
 }
 
+/* Grid & cells */
+
 .grid {
   display: grid;
   justify-items: stretch;
@@ -59,6 +61,13 @@ body {
 .grid-cell--zero-surrounding-power.is-revealed {
   border: 1px solid whitesmoke;
 }
+
+.grid-cell img {
+  width: 100%;
+  image-rendering: crisp-edges;
+}
+
+/* Effects */
 
 body.shaking {
   overflow: hidden;

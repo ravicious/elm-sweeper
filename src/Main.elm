@@ -4,6 +4,7 @@ import Browser
 import Game
 import Game.Board
 import Game.Cell as Cell
+import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
 import Game.Event
 import Game.Variant
@@ -19,11 +20,14 @@ renderCells game =
         |> Game.listCells
             (\( index, cell ) ->
                 let
-                    displayedValueDescriptor =
-                        Cell.describeDisplayedValue cell
+                    content =
+                        Cell.toContent cell
+
+                    contentDescription =
+                        Content.toDescription content
 
                     displayedValueClass =
-                        "grid-cell--displayed-value-" ++ displayedValueDescriptor
+                        "grid-cell--displayed-value-" ++ contentDescription
                 in
                 div
                     [ classList
@@ -37,11 +41,30 @@ renderCells game =
                         , ( "is-touchable", Cell.isTouchable cell )
                         , ( "is-not-touchable", not <| Cell.isTouchable cell )
                         ]
+
+                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
+                    -- toggle between showing power and surrounding power of monster cells.
                     , onClick (ClickCell index)
                     , attribute "data-index" (String.fromInt index)
                     ]
-                    [ text <| Cell.toDisplayedValue cell ]
+                    [ contentToHtml content ]
             )
+
+
+contentToHtml : Content.Content -> Html Msg
+contentToHtml content =
+    case content of
+        Content.Power power ->
+            img [ src <| "assets/monsters/" ++ String.fromInt power ++ ".png" ] []
+
+        Content.SurroundingPower surroundingPower ->
+            text <| String.fromInt surroundingPower
+
+        Content.Bet bet ->
+            text <| String.fromInt bet
+
+        Content.Nothing ->
+            text ""
 
 
 main : Program Flags Model Msg

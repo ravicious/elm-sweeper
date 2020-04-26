@@ -1,7 +1,6 @@
 module Game.Cell exposing
     ( Cell
     , changeBet
-    , describeDisplayedValue
     , getHitPower
     , getPower
     , getXpReward
@@ -13,10 +12,11 @@ module Game.Cell exposing
     , isTouchable
     , reveal
     , setSurroundingPowerFromNeighbors
-    , toDisplayedValue
+    , toContent
     , touch
     )
 
+import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
 import Game.ExpProgression exposing (Xp)
 import Tagged exposing (Tagged)
@@ -281,60 +281,31 @@ getXpReward =
         >> Tagged.retag
 
 
-toDisplayedValue : Cell -> String
-toDisplayedValue (Cell commonState specificState) =
+toContent : Cell -> Content.Content
+toContent (Cell commonState specificState) =
     let
-        betToString =
-            Maybe.map String.fromInt >> Maybe.withDefault ""
-
-        surroundingPowerToString =
-            Tagged.untag >> String.fromInt
+        betToContent =
+            Maybe.map Content.Bet >> Maybe.withDefault Content.Nothing
     in
     case specificState of
         ZeroPowerCell state ->
             if state.isRevealed then
                 if commonState.surroundingPower |> Tagged.Extra.is ((==) 0) then
-                    ""
+                    Content.Nothing
 
                 else
-                    surroundingPowerToString commonState.surroundingPower
+                    Content.SurroundingPower <| Tagged.untag commonState.surroundingPower
 
             else
-                betToString commonState.bet
+                betToContent commonState.bet
 
         MonsterCell state ->
             case state.displayedValue of
                 None ->
-                    betToString commonState.bet
+                    betToContent commonState.bet
 
                 Power ->
-                    state.power |> Tagged.untag |> String.fromInt
+                    Content.Power <| Tagged.untag state.power
 
                 SurroundingPower ->
-                    surroundingPowerToString commonState.surroundingPower
-
-
-describeDisplayedValue : Cell -> String
-describeDisplayedValue (Cell commonState specificState) =
-    let
-        betToString =
-            Maybe.map (always "bet") >> Maybe.withDefault "none"
-    in
-    case specificState of
-        ZeroPowerCell state ->
-            if state.isRevealed then
-                "surroundingPower"
-
-            else
-                betToString commonState.bet
-
-        MonsterCell state ->
-            case state.displayedValue of
-                None ->
-                    betToString commonState.bet
-
-                Power ->
-                    "power"
-
-                SurroundingPower ->
-                    "surroundingPower"
+                    Content.SurroundingPower <| Tagged.untag commonState.surroundingPower
