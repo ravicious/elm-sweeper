@@ -3,36 +3,9 @@ module Tests exposing (..)
 import Expect
 import Fuzz
 import Game.Board as Board
+import Random
+import Shrink
 import Test exposing (..)
-
-
-all : Test
-all =
-    Test.concat [ cellOperationsTests ]
-
-
-boardDimensionFuzzer : Fuzz.Fuzzer Int
-boardDimensionFuzzer =
-    Fuzz.intRange 1 30
-
-
-boardDimensionsFuzzer : Fuzz.Fuzzer ( Int, Int )
-boardDimensionsFuzzer =
-    Fuzz.map2 (,) boardDimensionFuzzer boardDimensionFuzzer
-
-
-{-| Creates a fuzzer which generates board dimensions and then generates a valid index
-for those dimensions.
--}
-boardDimensionsAndCellIndexFuzzer : Fuzz.Fuzzer ( ( Int, Int ), Int )
-boardDimensionsAndCellIndexFuzzer =
-    boardDimensionsFuzzer
-        |> Fuzz.andThen
-            (\( x, y ) ->
-                Fuzz.map2 (,)
-                    (Fuzz.constant ( x, y ))
-                    (Fuzz.intRange 0 (x * y - 1))
-            )
 
 
 cellOperationsTests : Test
@@ -58,3 +31,24 @@ cellOperationsTests =
                     Nothing ->
                         Expect.fail "Board.initWithZeroPower returned Nothing"
         ]
+
+
+{-| Creates a fuzzer which generates board dimensions and then generates a valid index
+for those dimensions.
+-}
+boardDimensionsAndCellIndexFuzzer : Fuzz.Fuzzer ( ( Int, Int ), Int )
+boardDimensionsAndCellIndexFuzzer =
+    let
+        boardDimensionGenerator =
+            Random.int 1 30
+
+        generator =
+            Random.map2 Tuple.pair boardDimensionGenerator boardDimensionGenerator
+                |> Random.andThen
+                    (\( x, y ) ->
+                        Random.map2 Tuple.pair
+                            (Random.constant ( x, y ))
+                            (Random.int 0 (x * y - 1))
+                    )
+    in
+    Fuzz.custom generator Shrink.noShrink
