@@ -1,6 +1,5 @@
 module Game exposing
     ( Action(..)
-    , Event(..)
     , State
     , getPlayerHp
     , getPlayerLevel
@@ -15,10 +14,12 @@ module Game exposing
 import Game.Board as Board
 import Game.Cell as Cell
 import Game.Direction exposing (Direction(..))
+import Game.Event as Event exposing (Event(..))
 import Game.ExpProgression as ExpProgression
 import Game.Player as Player
 import Game.RevealNeighborsWithZeroPower
 import Game.Variant as Variant
+import Maybe.Extra
 import Random
 import Tagged
 
@@ -40,15 +41,6 @@ type Status
 type Action
     = TouchCell Board.CellIndex
     | ChangeBet Direction Board.CellIndex
-
-
-type Event
-    = Nothing
-    | MonsterKilled
-    | HitByMonster
-    | LevelUp
-    | GameOver
-    | GameWon
 
 
 init : Variant.Identifier -> Random.Seed -> State
@@ -127,30 +119,37 @@ endGameIfPlayerIsDead state =
         state
 
 
-emitEvent : State -> State -> Cell.Cell -> Event
-emitEvent oldState newState oldTouchedCell =
+emitEvents : State -> State -> Cell.Cell -> List Event
+emitEvents oldState newState oldTouchedCell =
     if Cell.isRevealed oldTouchedCell then
-        Nothing
-
-    else if hasEnded newState then
-        if hasBeenLost newState then
-            GameOver
-
-        else
-            GameWon
-
-    else if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
-        LevelUp
-
-    else if Cell.isMonster oldTouchedCell then
-        if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
-            MonsterKilled
-
-        else
-            HitByMonster
+        []
 
     else
-        Nothing
+        [ if hasEnded newState then
+            if hasBeenLost newState then
+                Just GameOver
+
+            else
+                Just GameWon
+
+          else
+            Nothing
+        , if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
+            Just LevelUp
+
+          else
+            Nothing
+        , if Cell.isMonster oldTouchedCell then
+            if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
+                Just MonsterKilled
+
+            else
+                Just HitByMonster
+
+          else
+            Nothing
+        ]
+            |> Maybe.Extra.values
 
 
 revealNeighborsWithZeroPowerIfZeroSurroundingPower : Board.CellIndex -> Board.State -> Board.State
@@ -167,7 +166,7 @@ revealNeighborsWithZeroPowerIfZeroSurroundingPower index boardState =
         |> Maybe.withDefault boardState
 
 
-update : Action -> State -> ( State, Event )
+update : Action -> State -> ( State, List Event )
 update action state =
     if not <| hasEnded state then
         case action of
@@ -196,10 +195,10 @@ update action state =
                                         |> endGameIfPlayerIsDead
                             in
                             ( newState
-                            , emitEvent state newState cell
+                            , emitEvents state newState cell
                             )
                         )
-                    |> Maybe.withDefault ( state, Nothing )
+                    |> Maybe.withDefault ( state, [] )
 
             ChangeBet direction index ->
                 let
@@ -214,8 +213,8 @@ update action state =
                             index
                             state.board
                   }
-                , Nothing
+                , []
                 )
 
     else
-        ( state, Nothing )
+        ( state, [] )
