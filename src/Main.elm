@@ -1,6 +1,8 @@
 port module Main exposing (main)
 
+import Assets
 import Browser
+import Dict
 import Game
 import Game.Board
 import Game.Cell as Cell
@@ -55,7 +57,7 @@ contentToHtml : Content.Content -> Html Msg
 contentToHtml content =
     case content of
         Content.Power power ->
-            img [ src <| "assets/monsters/" ++ String.fromInt power ++ ".png" ] []
+            img [ src (Assets.monsterSrc power) ] []
 
         Content.SurroundingPower surroundingPower ->
             text <| String.fromInt surroundingPower
@@ -190,20 +192,60 @@ view model =
     div []
         [ div [ class "grid grid--16x30" ] <|
             renderCells model.game
-        , span []
-            [ text <|
-                "Seed: "
-                    ++ String.fromInt model.initialNumber
-                    ++ " Lvl: "
-                    ++ (String.fromInt <| Game.getPlayerLevel model.game)
-                    ++ " XP: "
-                    ++ (String.fromInt <| Game.getPlayerXp model.game)
-                    ++ " Next Lvl: "
-                    ++ (Game.getXpNeededForNextLevel model.game
-                            |> Maybe.map String.fromInt
-                            |> Maybe.withDefault ""
-                       )
-                    ++ " HP: "
-                    ++ (String.fromInt <| Game.getPlayerHp model.game)
+        , div [ class "bar" ]
+            [ viewStatus model.game
+            , viewMonsterSummary (Game.toMonsterSummary model.game)
+            , span [ style "margin-left" "auto" ] [ text <| "Seed: " ++ String.fromInt model.initialNumber ]
             ]
         ]
+
+
+viewStatus : Game.State -> Html Msg
+viewStatus game =
+    ul [ class "status" ]
+        [ li [ class "status-item" ]
+            [ text <| "Lvl: "
+            , span [] [ text <| String.fromInt <| Game.getPlayerLevel game ]
+            ]
+        , li [ class "status-item" ]
+            [ text <| "XP: "
+            , span (minSpanWidth "3ch") [ text <| String.fromInt <| Game.getPlayerXp game ]
+            ]
+        , li [ class "status-item" ]
+            [ text <|
+                "Next Lvl: "
+            , span (minSpanWidth "3ch")
+                [ Game.getXpNeededForNextLevel game
+                    |> Maybe.map String.fromInt
+                    |> Maybe.withDefault ""
+                    |> text
+                ]
+            ]
+        , li [ class "status-item" ]
+            [ text <| "HP: "
+            , span (minSpanWidth "2ch") [ text <| String.fromInt <| Game.getPlayerHp game ]
+            ]
+        ]
+
+
+minSpanWidth : String -> List (Html.Attribute msg)
+minSpanWidth s =
+    [ style "display" "inline-block", style "min-width" s ]
+
+
+viewMonsterSummary : Game.Board.MonsterSummary -> Html Msg
+viewMonsterSummary monsterSummary =
+    ul [ class "monster-summary" ]
+        (Dict.toList
+            monsterSummary
+            |> List.map
+                (\( power, count ) ->
+                    li [ class "monster-summary-item" ]
+                        [ text <| "Lvl " ++ String.fromInt power
+                        , span [ class "monster-summary-item-count" ]
+                            [ img [ src (Assets.monsterSrc power) ] []
+                            , span [ class "monster-summary-item-count-int" ] [ text <| " " ++ String.fromInt count ]
+                            ]
+                        ]
+                )
+        )

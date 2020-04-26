@@ -67,6 +67,73 @@ body {
   image-rendering: crisp-edges;
 }
 
+/* Bar */
+
+.bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-top: 1em;
+}
+
+.bar > * {
+  margin: 0;
+}
+
+.bar > * + * {
+  margin-left: 3em;
+}
+
+/* Status */
+
+.status {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-item + .status-item {
+  margin-left: 1.5em;
+}
+
+/* Monster summary */
+
+.monster-summary {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.monster-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.monster-summary-item + .monster-summary-item {
+  margin-left: 1.5em;
+}
+
+.monster-summary-item img {
+  height: 32px;
+  width: 32px;
+  image-rendering: crisp-edges;
+}
+
+.monster-summary-item-count {
+  display: flex;
+  align-items: center;
+}
+
+.monster-summary-item-count-int {
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+
 /* Effects */
 
 body.shaking {

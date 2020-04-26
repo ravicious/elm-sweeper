@@ -8,6 +8,7 @@ module Game exposing
     , hasBeenLost
     , init
     , listCells
+    , toMonsterSummary
     , update
     )
 
@@ -218,3 +219,8 @@ update action state =
 
     else
         ( state, [] )
+
+
+toMonsterSummary : State -> Board.MonsterSummary
+toMonsterSummary { board } =
+    Board.toMonsterSummary board

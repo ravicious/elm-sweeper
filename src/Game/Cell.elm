@@ -7,6 +7,7 @@ module Game.Cell exposing
     , hasZeroPower
     , hasZeroSurroundingPower
     , init
+    , isHidden
     , isMonster
     , isRevealed
     , isTouchable
@@ -230,6 +231,11 @@ isRevealed (Cell _ specificState) =
 
                 SurroundingPower ->
                     True
+
+
+isHidden : Cell -> Bool
+isHidden =
+    isRevealed >> not
 
 
 {-| Determines whether touching the cell will have any effect.

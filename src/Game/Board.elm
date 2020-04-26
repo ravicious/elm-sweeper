@@ -1,5 +1,6 @@
 module Game.Board exposing
     ( CellIndex
+    , MonsterSummary
     , State
     , changeBet
     , getNeighborIndexes
@@ -10,6 +11,7 @@ module Game.Board exposing
     , listCells
     , pointToIndex
     , revealCell
+    , toMonsterSummary
     , touchCell
     )
 
@@ -21,6 +23,7 @@ import Game.Variant as Variant exposing (Variant)
 import Maybe.Extra
 import Random
 import Random.List
+import Tagged
 
 
 type alias CellIndex =
@@ -40,6 +43,18 @@ type alias State =
     , columns : Int
     , cells : Cells
     }
+
+
+type alias Power =
+    Int
+
+
+type alias Count =
+    Int
+
+
+type alias MonsterSummary =
+    Dict Power Count
 
 
 
@@ -260,3 +275,25 @@ revealCell =
 changeBet : ( Int, Int ) -> Direction -> CellIndex -> State -> State
 changeBet betThresholds direction =
     updateCell <| \cell -> Cell.changeBet betThresholds direction cell
+
+
+
+-- Monster summary
+
+
+toMonsterSummary : State -> MonsterSummary
+toMonsterSummary { cells } =
+    Dict.foldl
+        (\index cell monsterSummary ->
+            if Cell.isMonster cell && Cell.isHidden cell then
+                let
+                    powerInt =
+                        Cell.getPower cell |> Tagged.untag
+                in
+                Dict.update powerInt (Maybe.map ((+) 1) >> Maybe.withDefault 1 >> Just) monsterSummary
+
+            else
+                monsterSummary
+        )
+        Dict.empty
+        cells
