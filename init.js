@@ -33,6 +33,20 @@ app.ports.gameHasBeenLost.subscribe(function() {
   }, 100)
 })
 
+app.ports.emitGameEvents.subscribe(function(gameEvents) {
+  gameEvents.forEach(function(gameEvent) {
+    switch (gameEvent) {
+      case 'HitByMonster':
+        document.body.classList.add('shaking')
+
+        window.setTimeout(function() {
+          document.body.classList.remove('shaking')
+        }, 600)
+      break
+    }
+  })
+})
+
 document.onkeydown = function(event) {
   var cell = document.querySelectorAll('.grid-cell:hover')[0]
 

@@ -19,6 +19,7 @@ import Game.ExpProgression as ExpProgression
 import Game.Player as Player
 import Game.RevealNeighborsWithZeroPower
 import Game.Variant as Variant
+import Maybe.Extra
 import Random
 import Tagged
 
@@ -123,25 +124,32 @@ emitEvents oldState newState oldTouchedCell =
     if Cell.isRevealed oldTouchedCell then
         []
 
-    else if hasEnded newState then
-        if hasBeenLost newState then
-            [ GameOver ]
-
-        else
-            [ GameWon ]
-
-    else if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
-        [ LevelUp ]
-
-    else if Cell.isMonster oldTouchedCell then
-        if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
-            [ MonsterKilled ]
-
-        else
-            [ HitByMonster ]
-
     else
-        []
+        [ if hasEnded newState then
+            if hasBeenLost newState then
+                Just GameOver
+
+            else
+                Just GameWon
+
+          else
+            Nothing
+        , if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
+            Just LevelUp
+
+          else
+            Nothing
+        , if Cell.isMonster oldTouchedCell then
+            if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
+                Just MonsterKilled
+
+            else
+                Just HitByMonster
+
+          else
+            Nothing
+        ]
+            |> Maybe.Extra.values
 
 
 revealNeighborsWithZeroPowerIfZeroSurroundingPower : Board.CellIndex -> Board.State -> Board.State
