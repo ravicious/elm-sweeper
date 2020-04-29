@@ -4,7 +4,7 @@ import Game.ExpProgression as ExpProgression
 
 
 type Identifier
-    = SixteenByThirty
+    = Normal
 
 
 type alias Variant =
@@ -20,12 +20,12 @@ type alias Variant =
 get : Identifier -> Variant
 get identifier =
     case identifier of
-        SixteenByThirty ->
-            sixteenByThirty
+        Normal ->
+            normal
 
 
-sixteenByThirty : Variant
-sixteenByThirty =
+normal : Variant
+normal =
     { rows = 16
     , columns = 30
     , minPower = 1

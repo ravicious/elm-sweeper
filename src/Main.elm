@@ -102,7 +102,7 @@ init flags =
         seed =
             Random.initialSeed flags.randomNumber
     in
-    ( { game = Game.init Game.Variant.SixteenByThirty seed
+    ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
       }
     , Cmd.none
