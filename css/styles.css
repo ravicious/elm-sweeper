@@ -1,3 +1,8 @@
+:root {
+  --base-font-size: calc(1rem + 0.5vw);
+  font-size: var(--base-font-size);
+}
+
 body {
   font-family: sans-serif;
   color: black;
@@ -24,7 +29,6 @@ body {
 
 .grid-cell {
   border: 1px solid #333333;
-  font-size: 1em;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -72,52 +76,25 @@ body {
 /* Bar */
 
 .bar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  margin-top: 1em;
+  font-size: calc(var(--base-font-size));
 }
 
-.bar > * {
-  margin: 0;
-}
-
-.bar > * + * {
-  margin-left: 3em;
-}
-
-/* Status */
 
 .status {
   padding-left: 0;
   list-style: none;
-  display: flex;
-  flex-wrap: wrap;
   font-variant-numeric: tabular-nums;
 }
-
-.status-item + .status-item {
-  margin-left: 1.5em;
-}
-
-/* Monster summary */
 
 .monster-summary {
   padding-left: 0;
   list-style: none;
-  display: flex;
-  flex-wrap: wrap;
 }
 
 .monster-summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.monster-summary-item + .monster-summary-item {
-  margin-left: 1.5em;
 }
 
 .monster-summary-item img {
@@ -134,6 +111,11 @@ body {
 .monster-summary-item-count-int {
   font-variant-numeric: tabular-nums;
   min-width: 2ch;
+}
+
+.seed {
+  margin-left: auto;
+  font-size: calc(var(--base-font-size) / 1.5 / 1.5);
 }
 
 /* Effects */
@@ -188,4 +170,39 @@ body.shaking .grid {
     box-shadow: 0 0 0 2em green inset;
     opacity: 0;
   }
+}
+
+/* Layout */
+
+.stack {
+  --space: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.stack > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.stack > * + * {
+  margin-top: var(--space);
+}
+
+.cluster {
+  --space: 1rem;
+  overflow: hidden;
+}
+
+.cluster > * {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin: calc(var(--space) / 2 * -1);
+}
+
+.cluster > * > * {
+  margin: calc(var(--space) / 2);
 }
