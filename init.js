@@ -42,7 +42,14 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         window.setTimeout(function() {
           document.body.classList.remove('shaking')
         }, 600)
-      break
+        break
+      case 'LevelUp':
+        document.getElementById('grid').classList.add('green-flash')
+
+        window.setTimeout(function() {
+          document.getElementById('grid').classList.remove('green-flash')
+        }, 1500)
+        break
     }
   })
 })

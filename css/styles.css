@@ -11,6 +11,8 @@ body {
   justify-items: stretch;
   width: 100%;
   font-size: 2vw;
+  /* Needed for FX on :before elements. */
+  position: relative;
 }
 
 .grid--16x30 {
@@ -162,5 +164,28 @@ body.shaking .grid {
 
   40%, 60% {
     transform: translate3d(4px, 0, 0);
+  }
+}
+
+.green-flash:before {
+  content: '';
+  animation: green-flash 1.5s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+@keyframes green-flash
+{
+  0% {
+    box-shadow: 0 0 0 0px green inset;
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 2em green inset;
+    opacity: 0;
   }
 }

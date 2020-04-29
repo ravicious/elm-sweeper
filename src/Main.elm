@@ -190,7 +190,7 @@ update msg model =
 view : Model -> Html.Html Msg
 view model =
     div []
-        [ div [ class "grid grid--16x30" ] <|
+        [ div [ id "grid", class "grid grid--16x30" ] <|
             renderCells model.game
         , div [ class "bar" ]
             [ viewStatus model.game
