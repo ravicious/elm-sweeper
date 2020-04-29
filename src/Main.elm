@@ -135,10 +135,16 @@ keyCodeToDirection string =
         "KeyA" ->
             Just Left
 
+        "KeyS" ->
+            Just Left
+
         "ArrowLeft" ->
             Just Left
 
         "KeyD" ->
+            Just Right
+
+        "KeyF" ->
             Just Right
 
         "ArrowRight" ->
