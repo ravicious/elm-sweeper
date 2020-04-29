@@ -114,7 +114,7 @@ listCells f state =
 endGameIfPlayerIsDead : State -> State
 endGameIfPlayerIsDead state =
     if Player.isDead state.player then
-        { state | status = Lost }
+        { state | status = Lost, board = Board.revealAllCells state.board }
 
     else
         state
