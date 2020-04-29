@@ -16,59 +16,6 @@ import Html.Events exposing (..)
 import Random
 
 
-renderCells : Game.State -> List (Html.Html Msg)
-renderCells game =
-    game
-        |> Game.listCells
-            (\( index, cell ) ->
-                let
-                    content =
-                        Cell.toContent cell
-
-                    contentDescription =
-                        Content.toDescription content
-
-                    displayedValueClass =
-                        "grid-cell--displayed-value-" ++ contentDescription
-                in
-                div
-                    [ classList
-                        [ ( "grid-cell", True )
-                        , ( displayedValueClass, True )
-                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
-                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
-                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
-                        , ( "is-revealed", Cell.isRevealed cell )
-                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
-                        , ( "is-touchable", Cell.isTouchable cell )
-                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
-                        ]
-
-                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
-                    -- toggle between showing power and surrounding power of monster cells.
-                    , onClick (ClickCell index)
-                    , attribute "data-index" (String.fromInt index)
-                    ]
-                    [ contentToHtml content ]
-            )
-
-
-contentToHtml : Content.Content -> Html Msg
-contentToHtml content =
-    case content of
-        Content.Power power ->
-            img [ src (Assets.monsterSrc power) ] []
-
-        Content.SurroundingPower surroundingPower ->
-            text <| String.fromInt surroundingPower
-
-        Content.Bet bet ->
-            text <| String.fromInt bet
-
-        Content.Nothing ->
-            text ""
-
-
 main : Program Flags Model Msg
 main =
     Browser.element
@@ -261,3 +208,56 @@ viewMonsterSummary monsterSummary =
                     )
             )
         ]
+
+
+renderCells : Game.State -> List (Html.Html Msg)
+renderCells game =
+    game
+        |> Game.listCells
+            (\( index, cell ) ->
+                let
+                    content =
+                        Cell.toContent cell
+
+                    contentDescription =
+                        Content.toDescription content
+
+                    displayedValueClass =
+                        "grid-cell--displayed-value-" ++ contentDescription
+                in
+                div
+                    [ classList
+                        [ ( "grid-cell", True )
+                        , ( displayedValueClass, True )
+                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
+                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
+                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
+                        , ( "is-revealed", Cell.isRevealed cell )
+                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
+                        , ( "is-touchable", Cell.isTouchable cell )
+                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
+                        ]
+
+                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
+                    -- toggle between showing power and surrounding power of monster cells.
+                    , onClick (ClickCell index)
+                    , attribute "data-index" (String.fromInt index)
+                    ]
+                    [ contentToHtml content ]
+            )
+
+
+contentToHtml : Content.Content -> Html Msg
+contentToHtml content =
+    case content of
+        Content.Power power ->
+            img [ src (Assets.monsterSrc power) ] []
+
+        Content.SurroundingPower surroundingPower ->
+            text <| String.fromInt surroundingPower
+
+        Content.Bet bet ->
+            text <| String.fromInt bet
+
+        Content.Nothing ->
+            text ""
