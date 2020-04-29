@@ -285,12 +285,23 @@ toMonsterSummary : State -> MonsterSummary
 toMonsterSummary { cells } =
     Dict.foldl
         (\index cell monsterSummary ->
-            if Cell.isMonster cell && Cell.isHidden cell then
+            if Cell.isMonster cell then
                 let
                     powerInt =
                         Cell.getPower cell |> Tagged.untag
+
+                    monsterSummaryWithPowerIntInitialized =
+                        Dict.update powerInt (\i -> Maybe.Extra.or i (Just 0)) monsterSummary
                 in
-                Dict.update powerInt (Maybe.map ((+) 1) >> Maybe.withDefault 1 >> Just) monsterSummary
+                -- If there's a monster cell still hidden, that's going to count towards the number
+                -- of those cells left.
+                -- Otherwise we want to show 0, hence why we ensure the given power int is
+                -- initialized in monsterSummary.
+                if Cell.isHidden cell then
+                    Dict.update powerInt (Maybe.map ((+) 1)) monsterSummaryWithPowerIntInitialized
+
+                else
+                    monsterSummaryWithPowerIntInitialized
 
             else
                 monsterSummary

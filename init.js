@@ -33,16 +33,46 @@ app.ports.gameHasBeenLost.subscribe(function() {
   }, 100)
 })
 
+var hitByMonsterTimeoutId, levelUpTimeoutId;
+
 app.ports.emitGameEvents.subscribe(function(gameEvents) {
   gameEvents.forEach(function(gameEvent) {
     switch (gameEvent) {
       case 'HitByMonster':
-        document.body.classList.add('shaking')
+        // If already happening, just make the animation last longer.
+        if (hitByMonsterTimeoutId) {
+          clearTimeout(hitByMonsterTimeoutId)
+        } else {
+          document.body.classList.add('shaking')
+        }
 
-        window.setTimeout(function() {
+        hitByMonsterTimeoutId = window.setTimeout(function() {
           document.body.classList.remove('shaking')
+          hitByMonsterTimeoutId = undefined
         }, 600)
-      break
+        break
+      case 'LevelUp':
+        window.requestAnimationFrame(function() {
+          // If already happening, interrupt the animation.
+          if (levelUpTimeoutId) {
+            clearTimeout(levelUpTimeoutId)
+            // Without those two calls requestAnimationFrame, removing a class and then just
+            // adding it again wouldn't really trigger the animation. So first we issue one
+            // requestAnimationFrame to do the class removal if needed. Inside another animation
+            // frame we add the class again, guaranteeing that the animation will be interrupted.
+            document.getElementById('grid').classList.remove('green-flash')
+          }
+
+          window.requestAnimationFrame(function() {
+            document.getElementById('grid').classList.add('green-flash')
+
+            levelUpTimeoutId = window.setTimeout(function() {
+              document.getElementById('grid').classList.remove('green-flash')
+              levelUpTimeoutId = undefined
+            }, 1500)
+          })
+        })
+        break
     }
   })
 })
