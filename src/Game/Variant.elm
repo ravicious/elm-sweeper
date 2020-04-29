@@ -14,6 +14,7 @@ type alias Variant =
     , maxPower : Int
     , cellConfiguration : List ( Int, Int )
     , expProgression : ExpProgression.ExpProgression
+    , initialPlayerHp : Int
     }
 
 
@@ -30,6 +31,7 @@ normal =
     , columns = 30
     , minPower = 1
     , maxPower = 5
+    , initialPlayerHp = 10
     , cellConfiguration =
         -- The configuration has been taken from the original game.
         [ ( 1, 33 ), ( 2, 27 ), ( 3, 20 ), ( 4, 13 ), ( 5, 6 ) ]

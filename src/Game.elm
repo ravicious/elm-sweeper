@@ -51,7 +51,7 @@ init identifier seed =
             Variant.get identifier
     in
     { board = Board.init variant seed
-    , player = Player.init
+    , player = Player.init variant.initialPlayerHp
     , variant = variant
     , status = InProgress
     }

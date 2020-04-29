@@ -21,11 +21,11 @@ type alias Player =
     }
 
 
-init : Player
-init =
+init : Int -> Player
+init hp =
     { xp = Tagged.tag 0
     , level = Tagged.tag 1
-    , hp = Tagged.tag 10
+    , hp = Tagged.tag hp
     }
 
 
