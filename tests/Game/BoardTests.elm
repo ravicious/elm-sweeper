@@ -3,6 +3,7 @@ module Game.BoardTests exposing (..)
 import Dict
 import Expect
 import Game.Board as Board
+import Game.Cell as Cell
 import Game.ExpProgression
 import Game.Variant
 import Random
@@ -15,6 +16,7 @@ oneByOneVariant =
     , columns = 1
     , minPower = 1
     , maxPower = 1
+    , initialPlayerHp = 10
     , cellConfiguration = [ ( 1, 1 ) ]
     , expProgression = Game.ExpProgression.init []
     }
@@ -27,7 +29,7 @@ toMonsterSummaryTests =
             \() ->
                 let
                     variant =
-                        Game.Variant.get Game.Variant.SixteenByThirty
+                        Game.Variant.get Game.Variant.Normal
 
                     expected =
                         Dict.fromList variant.cellConfiguration
