@@ -5,6 +5,7 @@ import Game.ExpProgression as ExpProgression
 
 type Identifier
     = Normal
+    | Huge
 
 
 type alias Variant =
@@ -24,6 +25,9 @@ get identifier =
         Normal ->
             normal
 
+        Huge ->
+            huge
+
 
 normal : Variant
 normal =
@@ -37,4 +41,18 @@ normal =
         [ ( 1, 33 ), ( 2, 27 ), ( 3, 20 ), ( 4, 13 ), ( 5, 6 ) ]
     , expProgression =
         ExpProgression.init [ ( 1, 10 ), ( 2, 50 ), ( 3, 167 ), ( 4, 271 ) ]
+    }
+
+
+huge : Variant
+huge =
+    { rows = 25
+    , columns = 50
+    , minPower = 1
+    , maxPower = 9
+    , initialPlayerHp = 30
+    , cellConfiguration =
+        [ ( 1, 52 ), ( 2, 46 ), ( 3, 40 ), ( 4, 36 ), ( 5, 30 ), ( 6, 24 ), ( 7, 18 ), ( 8, 13 ), ( 9, 1 ) ]
+    , expProgression =
+        ExpProgression.init [ ( 1, 10 ), ( 2, 90 ), ( 3, 202 ), ( 4, 400 ), ( 5, 1072 ), ( 6, 1840 ), ( 7, 2992 ), ( 8, 4656 ) ]
     }

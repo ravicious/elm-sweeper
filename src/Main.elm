@@ -142,17 +142,47 @@ update msg model =
 
 view : Model -> Html.Html Msg
 view model =
-    div [ class "stack" ]
-        [ div [ id "grid", class "grid grid--16x30" ] <|
-            renderCells model.game
-        , div [ class "cluster bar" ]
-            [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
-                [ viewStatus model.game
-                , viewMonsterSummary (Game.toMonsterSummary model.game)
+    div []
+        [ gridStyle model.game.variant
+        , div [ class "stack" ]
+            [ div [ id "grid", class "grid" ] <|
+                renderCells model.game
+            , div [ class "cluster bar" ]
+                [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
+                    [ viewStatus model.game
+                    , viewMonsterSummary (Game.toMonsterSummary model.game)
+                    ]
                 ]
+            , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt model.initialNumber ]
             ]
-        , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt model.initialNumber ]
         ]
+
+
+gridStyle : Game.Variant.Variant -> Html Msg
+gridStyle variant =
+    let
+        fontSize =
+            if variant.columns > 30 then
+                "1.5vw"
+
+            else
+                "2vw"
+
+        styles =
+            """
+        .grid {
+          font-size: <font-size>;
+          grid-template-rows: repeat(<rows>, <rows>fr);
+          grid-template-columns: repeat(<columns>, <columns>fr);
+          /* Make sure that we render square cells */
+          height: calc((100vw / <columns>) * <rows>);
+        }
+      """
+                |> String.replace "<font-size>" fontSize
+                |> String.replace "<rows>" (String.fromInt variant.rows)
+                |> String.replace "<columns>" (String.fromInt variant.columns)
+    in
+    node "style" [] [ text styles ]
 
 
 viewStatus : Game.State -> Html Msg
@@ -251,7 +281,11 @@ contentToHtml : Content.Content -> Html Msg
 contentToHtml content =
     case content of
         Content.Power power ->
-            img [ src (Assets.monsterSrc power) ] []
+            if power <= 5 then
+                img [ src (Assets.monsterSrc power) ] []
+
+            else
+                text <| String.fromInt power
 
         Content.SurroundingPower surroundingPower ->
             text <| String.fromInt surroundingPower
