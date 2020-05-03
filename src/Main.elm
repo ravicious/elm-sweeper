@@ -281,7 +281,7 @@ contentToHtml : Content.Content -> Html Msg
 contentToHtml content =
     case content of
         Content.Power power ->
-            if power <= 5 then
+            if power <= 9 then
                 img [ src (Assets.monsterSrc power), alt ("Lvl " ++ String.fromInt power) ] []
 
             else

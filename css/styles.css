@@ -54,6 +54,11 @@ body {
 
 .grid-cell--monster.is-revealed {
   background-color: blanchedalmond;
+  padding: calc(var(--base-font-size) / 1.5 / 1.5 / 1.5 / 1.5 / 1.5 / 1.5 );
+}
+
+.grid-cell--monster.is-revealed.grid-cell--displayed-value-surroundingPower {
+  padding: 0;
 }
 
 .grid-cell--zero-surrounding-power.is-revealed {
