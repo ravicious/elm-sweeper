@@ -231,7 +231,7 @@ viewMonsterSummary monsterSummary =
                         li [ class "monster-summary-item" ]
                             [ text <| "Lvl " ++ String.fromInt power
                             , span [ class "monster-summary-item-count" ]
-                                [ img [ src (Assets.monsterSrc power) ] []
+                                [ img [ src (Assets.monsterSrc power), alt "" ] []
                                 , span [ class "monster-summary-item-count-int" ] [ text <| " " ++ String.fromInt count ]
                                 ]
                             ]
@@ -282,7 +282,7 @@ contentToHtml content =
     case content of
         Content.Power power ->
             if power <= 5 then
-                img [ src (Assets.monsterSrc power) ] []
+                img [ src (Assets.monsterSrc power), alt ("Lvl " ++ String.fromInt power) ] []
 
             else
                 text <| String.fromInt power
