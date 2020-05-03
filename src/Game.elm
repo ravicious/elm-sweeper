@@ -28,7 +28,7 @@ import Tagged
 type alias State =
     { board : Board.State
     , player : Player.Player
-    , variantIdentifier : Variant.Identifier
+    , variant : Variant.Variant
     , status : Status
     }
 
@@ -51,8 +51,8 @@ init identifier seed =
             Variant.get identifier
     in
     { board = Board.init variant seed
-    , player = Player.init
-    , variantIdentifier = identifier
+    , player = Player.init variant.initialPlayerHp
+    , variant = variant
     , status = InProgress
     }
 
@@ -74,8 +74,7 @@ getPlayerHp =
 
 getXpNeededForNextLevel : State -> Maybe Int
 getXpNeededForNextLevel state =
-    Variant.get state.variantIdentifier
-        |> .expProgression
+    state.variant.expProgression
         |> ExpProgression.getXpNeededForNextLevel state.player.level state.player.xp
         |> Maybe.map Tagged.untag
 
@@ -114,7 +113,7 @@ listCells f state =
 endGameIfPlayerIsDead : State -> State
 endGameIfPlayerIsDead state =
     if Player.isDead state.player then
-        { state | status = Lost }
+        { state | status = Lost, board = Board.revealAllCells state.board }
 
     else
         state
@@ -172,10 +171,6 @@ update action state =
     if not <| hasEnded state then
         case action of
             TouchCell index ->
-                let
-                    variant =
-                        Variant.get state.variantIdentifier
-                in
                 Board.indexToCell state.board index
                     |> Maybe.map
                         (\cell ->
@@ -186,7 +181,7 @@ update action state =
 
                                 updatedPlayer =
                                     if not <| Cell.isRevealed cell then
-                                        Player.touchCell variant.expProgression cell state.player
+                                        Player.touchCell state.variant.expProgression cell state.player
 
                                     else
                                         state.player
@@ -202,14 +197,10 @@ update action state =
                     |> Maybe.withDefault ( state, [] )
 
             ChangeBet direction index ->
-                let
-                    variant =
-                        Variant.get state.variantIdentifier
-                in
                 ( { state
                     | board =
                         Board.changeBet
-                            ( variant.minPower, variant.maxPower )
+                            ( state.variant.minPower, state.variant.maxPower )
                             direction
                             index
                             state.board

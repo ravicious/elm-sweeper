@@ -16,59 +16,6 @@ import Html.Events exposing (..)
 import Random
 
 
-renderCells : Game.State -> List (Html.Html Msg)
-renderCells game =
-    game
-        |> Game.listCells
-            (\( index, cell ) ->
-                let
-                    content =
-                        Cell.toContent cell
-
-                    contentDescription =
-                        Content.toDescription content
-
-                    displayedValueClass =
-                        "grid-cell--displayed-value-" ++ contentDescription
-                in
-                div
-                    [ classList
-                        [ ( "grid-cell", True )
-                        , ( displayedValueClass, True )
-                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
-                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
-                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
-                        , ( "is-revealed", Cell.isRevealed cell )
-                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
-                        , ( "is-touchable", Cell.isTouchable cell )
-                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
-                        ]
-
-                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
-                    -- toggle between showing power and surrounding power of monster cells.
-                    , onClick (ClickCell index)
-                    , attribute "data-index" (String.fromInt index)
-                    ]
-                    [ contentToHtml content ]
-            )
-
-
-contentToHtml : Content.Content -> Html Msg
-contentToHtml content =
-    case content of
-        Content.Power power ->
-            img [ src (Assets.monsterSrc power) ] []
-
-        Content.SurroundingPower surroundingPower ->
-            text <| String.fromInt surroundingPower
-
-        Content.Bet bet ->
-            text <| String.fromInt bet
-
-        Content.Nothing ->
-            text ""
-
-
 main : Program Flags Model Msg
 main =
     Browser.element
@@ -102,7 +49,7 @@ init flags =
         seed =
             Random.initialSeed flags.randomNumber
     in
-    ( { game = Game.init Game.Variant.SixteenByThirty seed
+    ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
       }
     , Cmd.none
@@ -195,17 +142,47 @@ update msg model =
 
 view : Model -> Html.Html Msg
 view model =
-    div [ class "stack" ]
-        [ div [ id "grid", class "grid grid--16x30" ] <|
-            renderCells model.game
-        , div [ class "cluster bar" ]
-            [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
-                [ viewStatus model.game
-                , viewMonsterSummary (Game.toMonsterSummary model.game)
+    div []
+        [ gridStyle model.game.variant
+        , div [ class "stack" ]
+            [ div [ id "grid", class "grid" ] <|
+                renderCells model.game
+            , div [ class "cluster bar" ]
+                [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
+                    [ viewStatus model.game
+                    , viewMonsterSummary (Game.toMonsterSummary model.game)
+                    ]
                 ]
+            , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt model.initialNumber ]
             ]
-        , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt model.initialNumber ]
         ]
+
+
+gridStyle : Game.Variant.Variant -> Html Msg
+gridStyle variant =
+    let
+        fontSize =
+            if variant.columns > 30 then
+                "1.5vw"
+
+            else
+                "2vw"
+
+        styles =
+            """
+        .grid {
+          font-size: <font-size>;
+          grid-template-rows: repeat(<rows>, <rows>fr);
+          grid-template-columns: repeat(<columns>, <columns>fr);
+          /* Make sure that we render square cells */
+          height: calc((100vw / <columns>) * <rows>);
+        }
+      """
+                |> String.replace "<font-size>" fontSize
+                |> String.replace "<rows>" (String.fromInt variant.rows)
+                |> String.replace "<columns>" (String.fromInt variant.columns)
+    in
+    node "style" [] [ text styles ]
 
 
 viewStatus : Game.State -> Html Msg
@@ -254,10 +231,67 @@ viewMonsterSummary monsterSummary =
                         li [ class "monster-summary-item" ]
                             [ text <| "Lvl " ++ String.fromInt power
                             , span [ class "monster-summary-item-count" ]
-                                [ img [ src (Assets.monsterSrc power) ] []
+                                [ img [ src (Assets.monsterSrc power), alt "" ] []
                                 , span [ class "monster-summary-item-count-int" ] [ text <| " " ++ String.fromInt count ]
                                 ]
                             ]
                     )
             )
         ]
+
+
+renderCells : Game.State -> List (Html.Html Msg)
+renderCells game =
+    game
+        |> Game.listCells
+            (\( index, cell ) ->
+                let
+                    content =
+                        Cell.toContent cell
+
+                    contentDescription =
+                        Content.toDescription content
+
+                    displayedValueClass =
+                        "grid-cell--displayed-value-" ++ contentDescription
+                in
+                div
+                    [ classList
+                        [ ( "grid-cell", True )
+                        , ( displayedValueClass, True )
+                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
+                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
+                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
+                        , ( "is-revealed", Cell.isRevealed cell )
+                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
+                        , ( "is-touchable", Cell.isTouchable cell )
+                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
+                        ]
+
+                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
+                    -- toggle between showing power and surrounding power of monster cells.
+                    , onClick (ClickCell index)
+                    , attribute "data-index" (String.fromInt index)
+                    ]
+                    [ contentToHtml content ]
+            )
+
+
+contentToHtml : Content.Content -> Html Msg
+contentToHtml content =
+    case content of
+        Content.Power power ->
+            if power <= 9 then
+                img [ src (Assets.monsterSrc power), alt ("Lvl " ++ String.fromInt power) ] []
+
+            else
+                text <| String.fromInt power
+
+        Content.SurroundingPower surroundingPower ->
+            text <| String.fromInt surroundingPower
+
+        Content.Bet bet ->
+            text <| String.fromInt bet
+
+        Content.Nothing ->
+            text ""

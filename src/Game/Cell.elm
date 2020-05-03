@@ -1,7 +1,6 @@
 module Game.Cell exposing
     ( Cell
     , changeBet
-    , getHitPower
     , getPower
     , getXpReward
     , hasZeroPower
@@ -258,19 +257,6 @@ getPower (Cell _ specificState) =
 
         MonsterCell state ->
             state.power
-
-
-getHitPower : Cell -> Power
-getHitPower =
-    getPower
-        >> Tagged.map
-            (\power ->
-                if power > 1 then
-                    power * (power - 1)
-
-                else
-                    power
-            )
 
 
 getXpReward : Cell -> Xp

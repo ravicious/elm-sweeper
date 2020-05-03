@@ -21,11 +21,11 @@ type alias Player =
     }
 
 
-init : Player
-init =
+init : Int -> Player
+init hp =
     { xp = Tagged.tag 0
     , level = Tagged.tag 1
-    , hp = Tagged.tag 10
+    , hp = Tagged.tag hp
     }
 
 
@@ -59,12 +59,27 @@ reduceHpIfCellIsMorePowerful cell player =
     if not <| isMorePowerfulThanCell player cell then
         let
             currentHpMinusCellHitPower =
-                (-) (Tagged.untag player.hp) (Tagged.untag <| Cell.getHitPower cell)
+                (-) (Tagged.untag player.hp) (calculateCellHitPower player cell)
         in
         { player | hp = Tagged.tag <| max currentHpMinusCellHitPower 0 }
 
     else
         player
+
+
+calculateCellHitPower : Player -> Cell.Cell -> Int
+calculateCellHitPower player cell =
+    let
+        playerLevel =
+            Tagged.untag player.level
+
+        cellPower =
+            Tagged.untag <| Cell.getPower cell
+
+        levelsDifferenceDividedByLevelRoundedUp =
+            ceiling <| toFloat (cellPower - playerLevel) / toFloat playerLevel
+    in
+    cellPower * levelsDifferenceDividedByLevelRoundedUp
 
 
 addXp : Cell.Cell -> Player -> Player

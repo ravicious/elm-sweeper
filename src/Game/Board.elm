@@ -10,6 +10,7 @@ module Game.Board exposing
     , initWithZeroPower
     , listCells
     , pointToIndex
+    , revealAllCells
     , revealCell
     , toMonsterSummary
     , touchCell
@@ -275,6 +276,11 @@ revealCell =
 changeBet : ( Int, Int ) -> Direction -> CellIndex -> State -> State
 changeBet betThresholds direction =
     updateCell <| \cell -> Cell.changeBet betThresholds direction cell
+
+
+revealAllCells : State -> State
+revealAllCells state =
+    { state | cells = Dict.map (\_ cell -> Cell.reveal cell) state.cells }
 
 
 
