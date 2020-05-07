@@ -79,12 +79,14 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
 
 document.onkeydown = function(event) {
   var cell = document.querySelectorAll('.grid-cell:hover')[0]
+  var index = cell && parseInt(cell.dataset.index, 10) || null
 
-  if (!cell) {
-    return
-  }
+  app.ports.keyDown.send([event.code, index])
+}
 
-  const index = parseInt(cell.dataset.index, 10)
+document.onkeyup = function(event) {
+  var cell = document.querySelectorAll('.grid-cell:hover')[0]
+  var index = cell && parseInt(cell.dataset.index, 10) || null
 
-  app.ports.keyPressedOverCell.send([index, event.code])
+  app.ports.keyUp.send([event.code, index])
 }

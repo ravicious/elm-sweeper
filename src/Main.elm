@@ -34,13 +34,28 @@ type alias Flags =
 type alias Model =
     { game : Game.State
     , initialNumber : Int
+    , touchNeighbours : Bool
     }
+
+
+type KeyDirection
+    = Up
+    | Down
+
+
+type KeyEvent
+    = KeyEvent KeyDirection String (Maybe Game.Board.CellIndex)
+
+
+makeKeyEvent : KeyDirection -> ( String, Maybe Game.Board.CellIndex ) -> KeyEvent
+makeKeyEvent keyDirection ( keyCode, maybeIndex ) =
+    KeyEvent keyDirection keyCode maybeIndex
 
 
 type Msg
     = ClickCell Game.Board.CellIndex
     | InitializeWithSeed Int
-    | KeyPressedOverCell ( Game.Board.CellIndex, String )
+    | KeyEventReceived KeyEvent
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -51,6 +66,7 @@ init flags =
     in
     ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
+      , touchNeighbours = False
       }
     , Cmd.none
     )
@@ -59,7 +75,10 @@ init flags =
 port initializeWithSeed : (Int -> msg) -> Sub msg
 
 
-port keyPressedOverCell : (( Game.Board.CellIndex, String ) -> msg) -> Sub msg
+port keyUp : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
+
+
+port keyDown : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
 
 
 port gameHasBeenLost : () -> Cmd msg
@@ -72,7 +91,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ initializeWithSeed InitializeWithSeed
-        , keyPressedOverCell KeyPressedOverCell
+        , keyUp (KeyEventReceived << makeKeyEvent Up)
+        , keyDown (KeyEventReceived << makeKeyEvent Down)
         ]
 
 
@@ -106,8 +126,15 @@ update msg model =
     case msg of
         ClickCell index ->
             let
+                action =
+                    if model.touchNeighbours then
+                        Game.TouchCellAndItsNeighbors
+
+                    else
+                        Game.TouchCell
+
                 ( updatedGame, emittedEvents ) =
-                    Game.update (Game.TouchCell index) model.game
+                    Game.update (action index) model.game
 
                 newModel =
                     { model | game = updatedGame }
@@ -123,21 +150,49 @@ update msg model =
                 ]
             )
 
-        KeyPressedOverCell ( index, keyCode ) ->
-            keyCodeToDirection keyCode
-                |> Maybe.map
-                    (\direction ->
-                        ( { model | game = Game.update (Game.ChangeBet direction index) model.game |> Tuple.first }
-                        , Cmd.none
-                        )
-                    )
-                |> Maybe.withDefault
-                    ( model
-                    , Cmd.none
-                    )
+        KeyEventReceived keyEvent ->
+            case keyEvent of
+                KeyEvent keyDirection "KeyW" _ ->
+                    updateTouchNeighbours keyDirection model
+
+                KeyEvent keyDirection "KeyE" _ ->
+                    updateTouchNeighbours keyDirection model
+
+                KeyEvent keyDirection "ArrowUp" _ ->
+                    updateTouchNeighbours keyDirection model
+
+                KeyEvent Down keyCode (Just index) ->
+                    keyCodeToDirection keyCode
+                        |> Maybe.map
+                            (\direction ->
+                                ( { model | game = Game.update (Game.ChangeBet direction index) model.game |> Tuple.first }
+                                , Cmd.none
+                                )
+                            )
+                        |> Maybe.withDefault
+                            ( model
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( model, Cmd.none )
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
+
+
+updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
+updateTouchNeighbours keyDirection model =
+    let
+        touchNeighbours =
+            case keyDirection of
+                Up ->
+                    False
+
+                Down ->
+                    True
+    in
+    ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
 
 
 view : Model -> Html.Html Msg
