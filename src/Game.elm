@@ -41,6 +41,7 @@ type Status
 
 type Action
     = TouchCell Board.CellIndex
+    | TouchCellAndItsNeighbors Board.CellIndex
     | ChangeBet Direction Board.CellIndex
 
 
@@ -195,6 +196,34 @@ update action state =
                             )
                         )
                     |> Maybe.withDefault ( state, [] )
+
+            TouchCellAndItsNeighbors index ->
+                let
+                    neighborIndexes =
+                        Board.getNeighborIndexes state.board index
+
+                    indexesToTouch =
+                        index :: neighborIndexes
+                in
+                List.foldl
+                    (\indexToTouch ( accState, accEvents ) ->
+                        Board.indexToCell accState.board indexToTouch
+                            |> Maybe.map
+                                (\cell ->
+                                    if not <| Cell.isRevealed cell then
+                                        let
+                                            ( newState, newEvents ) =
+                                                update (TouchCell indexToTouch) accState
+                                        in
+                                        ( newState, List.append accEvents newEvents )
+
+                                    else
+                                        ( accState, accEvents )
+                                )
+                            |> Maybe.withDefault ( accState, accEvents )
+                    )
+                    ( state, [] )
+                    indexesToTouch
 
             ChangeBet direction index ->
                 ( { state

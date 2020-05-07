@@ -34,6 +34,7 @@ type alias Flags =
 type alias Model =
     { game : Game.State
     , initialNumber : Int
+    , touchNeighbours : Bool
     }
 
 
@@ -65,6 +66,7 @@ init flags =
     in
     ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
+      , touchNeighbours = False
       }
     , Cmd.none
     )
@@ -124,8 +126,15 @@ update msg model =
     case msg of
         ClickCell index ->
             let
+                action =
+                    if model.touchNeighbours then
+                        Game.TouchCellAndItsNeighbors
+
+                    else
+                        Game.TouchCell
+
                 ( updatedGame, emittedEvents ) =
-                    Game.update (Game.TouchCell index) model.game
+                    Game.update (action index) model.game
 
                 newModel =
                     { model | game = updatedGame }
@@ -143,6 +152,15 @@ update msg model =
 
         KeyEventReceived keyEvent ->
             case keyEvent of
+                KeyEvent keyDirection "KeyW" _ ->
+                    updateTouchNeighbours keyDirection model
+
+                KeyEvent keyDirection "KeyE" _ ->
+                    updateTouchNeighbours keyDirection model
+
+                KeyEvent keyDirection "ArrowUp" _ ->
+                    updateTouchNeighbours keyDirection model
+
                 KeyEvent Down keyCode (Just index) ->
                     keyCodeToDirection keyCode
                         |> Maybe.map
@@ -161,6 +179,20 @@ update msg model =
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
+
+
+updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
+updateTouchNeighbours keyDirection model =
+    let
+        touchNeighbours =
+            case keyDirection of
+                Up ->
+                    False
+
+                Down ->
+                    True
+    in
+    ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
 
 
 view : Model -> Html.Html Msg
