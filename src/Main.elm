@@ -37,10 +37,24 @@ type alias Model =
     }
 
 
+type KeyDirection
+    = Up
+    | Down
+
+
+type KeyEvent
+    = KeyEvent KeyDirection String (Maybe Game.Board.CellIndex)
+
+
+makeKeyEvent : KeyDirection -> ( String, Maybe Game.Board.CellIndex ) -> KeyEvent
+makeKeyEvent keyDirection ( keyCode, maybeIndex ) =
+    KeyEvent keyDirection keyCode maybeIndex
+
+
 type Msg
     = ClickCell Game.Board.CellIndex
     | InitializeWithSeed Int
-    | KeyPressedOverCell ( Game.Board.CellIndex, String )
+    | KeyEventReceived KeyEvent
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -59,7 +73,10 @@ init flags =
 port initializeWithSeed : (Int -> msg) -> Sub msg
 
 
-port keyPressedOverCell : (( Game.Board.CellIndex, String ) -> msg) -> Sub msg
+port keyUp : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
+
+
+port keyDown : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
 
 
 port gameHasBeenLost : () -> Cmd msg
@@ -72,7 +89,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ initializeWithSeed InitializeWithSeed
-        , keyPressedOverCell KeyPressedOverCell
+        , keyUp (KeyEventReceived << makeKeyEvent Up)
+        , keyDown (KeyEventReceived << makeKeyEvent Down)
         ]
 
 
@@ -123,18 +141,23 @@ update msg model =
                 ]
             )
 
-        KeyPressedOverCell ( index, keyCode ) ->
-            keyCodeToDirection keyCode
-                |> Maybe.map
-                    (\direction ->
-                        ( { model | game = Game.update (Game.ChangeBet direction index) model.game |> Tuple.first }
-                        , Cmd.none
-                        )
-                    )
-                |> Maybe.withDefault
-                    ( model
-                    , Cmd.none
-                    )
+        KeyEventReceived keyEvent ->
+            case keyEvent of
+                KeyEvent Down keyCode (Just index) ->
+                    keyCodeToDirection keyCode
+                        |> Maybe.map
+                            (\direction ->
+                                ( { model | game = Game.update (Game.ChangeBet direction index) model.game |> Tuple.first }
+                                , Cmd.none
+                                )
+                            )
+                        |> Maybe.withDefault
+                            ( model
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( model, Cmd.none )
 
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
