@@ -13,6 +13,7 @@ import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Keyed
 import Random
 
 
@@ -31,10 +32,16 @@ type alias Flags =
     }
 
 
+type Display
+    = Board
+    | Zoom Board.CellIndex
+
+
 type alias Model =
     { game : Game.State
     , initialNumber : Int
     , touchNeighbours : Bool
+    , display : Display
     }
 
 
@@ -56,6 +63,7 @@ type Msg
     = ClickCell Board.CellIndex
     | InitializeWithSeed Int
     | KeyEventReceived KeyEvent
+    | ZoomOnCell Board.CellIndex
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -67,6 +75,7 @@ init flags =
     ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
       , touchNeighbours = False
+      , display = Board
       }
     , Cmd.none
     )
@@ -137,7 +146,7 @@ update msg model =
                     Game.update (action index) model.game
 
                 newModel =
-                    { model | game = updatedGame }
+                    { model | game = updatedGame, display = Board }
             in
             ( newModel
             , Cmd.batch
@@ -177,6 +186,9 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        ZoomOnCell index ->
+            ( { model | display = Zoom index }, Cmd.none )
+
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
 
@@ -198,10 +210,23 @@ updateTouchNeighbours keyDirection model =
 view : Model -> Html.Html Msg
 view model =
     div []
-        [ gridStyle model.game.variant
+        [ case model.display of
+            Board ->
+                gridStyle model.game.variant
+
+            Zoom _ ->
+                gridStyle { rows = 5, columns = 5 }
         , div [ class "stack" ]
-            [ div [ id "grid", class "grid" ] <|
-                renderCells model.game
+            [ case model.display of
+                Board ->
+                    Html.Keyed.node "div" [ id "grid", class "grid" ] <|
+                        Game.listCells (viewCell ZoomOnCell) model.game
+
+                Zoom index ->
+                    Html.Keyed.node "div" [ id "grid", class "grid" ] <|
+                        Game.listZoomCells index (viewCell ClickCell) model.game
+
+            -- Display slider for setting the bet and for closing the zoom.
             , div [ class "cluster bar" ]
                 [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
                     [ viewStatus model.game
@@ -213,11 +238,11 @@ view model =
         ]
 
 
-gridStyle : Game.Variant.Variant -> Html Msg
-gridStyle variant =
+gridStyle : { a | rows : Int, columns : Int } -> Html Msg
+gridStyle dimensions =
     let
         fontSize =
-            if variant.columns > 30 then
+            if dimensions.columns > 30 then
                 "1.5vw"
 
             else
@@ -234,8 +259,8 @@ gridStyle variant =
         }
       """
                 |> String.replace "<font-size>" fontSize
-                |> String.replace "<rows>" (String.fromInt variant.rows)
-                |> String.replace "<columns>" (String.fromInt variant.columns)
+                |> String.replace "<rows>" (String.fromInt dimensions.rows)
+                |> String.replace "<columns>" (String.fromInt dimensions.columns)
     in
     node "style" [] [ text styles ]
 
@@ -278,7 +303,7 @@ minSpanWidth s =
 viewMonsterSummary : Board.MonsterSummary -> Html Msg
 viewMonsterSummary monsterSummary =
     div [ class "cluster" ]
-        [ ul [ class "monster-summary" ]
+        [ ul [ class "monster-summary", style "justify-content" "center" ]
             (Dict.toList
                 monsterSummary
                 |> List.map
@@ -295,41 +320,42 @@ viewMonsterSummary monsterSummary =
         ]
 
 
-renderCells : Game.State -> List (Html.Html Msg)
-renderCells game =
-    game
-        |> Game.listCells
-            (\( index, cell ) ->
-                let
-                    content =
-                        Cell.toContent cell
+viewCell : (Board.CellIndex -> Msg) -> ( Board.CellIndex, Cell.Cell ) -> ( String, Html Msg )
+viewCell onClickHandler ( index, cell ) =
+    -- TODO: Highlight the zoomed cell in zoom mode.
+    -- TODO: Employ stuff from Every Layout so that even on non-portrait orientation we clearly see
+    -- all five rows and columns.
+    let
+        content =
+            Cell.toContent cell
 
-                    contentDescription =
-                        Content.toDescription content
+        contentDescription =
+            Content.toDescription content
 
-                    displayedValueClass =
-                        "grid-cell--displayed-value-" ++ contentDescription
-                in
-                div
-                    [ classList
-                        [ ( "grid-cell", True )
-                        , ( displayedValueClass, True )
-                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
-                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
-                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
-                        , ( "is-revealed", Cell.isRevealed cell )
-                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
-                        , ( "is-touchable", Cell.isTouchable cell )
-                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
-                        ]
+        displayedValueClass =
+            "grid-cell--displayed-value-" ++ contentDescription
+    in
+    ( String.fromInt index
+    , div
+        [ classList
+            [ ( "grid-cell", True )
+            , ( displayedValueClass, True )
+            , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
+            , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
+            , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
+            , ( "is-revealed", Cell.isRevealed cell )
+            , ( "is-not-revealed", not <| Cell.isRevealed cell )
+            , ( "is-touchable", Cell.isTouchable cell )
+            , ( "is-not-touchable", not <| Cell.isTouchable cell )
+            ]
 
-                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
-                    -- toggle between showing power and surrounding power of monster cells.
-                    , onClick (ClickCell index)
-                    , attribute "data-index" (String.fromInt index)
-                    ]
-                    [ contentToHtml content ]
-            )
+        -- Revealed cells should still be clickable, otherwise we wouldn't be able to
+        -- toggle between showing power and surrounding power of monster cells.
+        , onClick (onClickHandler index)
+        , attribute "data-index" (String.fromInt index)
+        ]
+        [ contentToHtml content ]
+    )
 
 
 contentToHtml : Content.Content -> Html Msg

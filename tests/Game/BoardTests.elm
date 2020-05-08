@@ -2,6 +2,7 @@ module Game.BoardTests exposing (..)
 
 import Dict
 import Expect
+import Fuzz
 import Game.Board as Board
 import Game.Cell as Cell
 import Game.ExpProgression
@@ -15,6 +16,18 @@ oneByOneVariant : Game.Variant.Variant
 oneByOneVariant =
     { rows = 1
     , columns = 1
+    , minPower = 1
+    , maxPower = 1
+    , initialPlayerHp = 10
+    , cellConfiguration = [ ( 1, 1 ) ]
+    , expProgression = Game.ExpProgression.init []
+    }
+
+
+fiveByFiveVariant : Game.Variant.Variant
+fiveByFiveVariant =
+    { rows = 5
+    , columns = 5
     , minPower = 1
     , maxPower = 1
     , initialPlayerHp = 10
@@ -72,6 +85,38 @@ toMonsterSummaryTests =
                         Board.init oneByOneVariant (Random.initialSeed 0)
                             |> Board.touchCell 0
                             |> Board.toMonsterSummary
+                in
+                Expect.equal expected actual
+        ]
+
+
+listZoomCellsTests : Test
+listZoomCellsTests =
+    describe "listZoomCellsTests on a 5x5 board"
+        [ test "with the center index yields the same result as listCells" <|
+            \() ->
+                let
+                    board =
+                        Board.init fiveByFiveVariant (Random.initialSeed 0)
+
+                    expected =
+                        Board.listCells identity board
+
+                    actual =
+                        Board.listZoomCells 12 identity board
+                in
+                Expect.equal expected actual
+        , fuzz (Fuzz.intRange 0 24) "with any index yields the same result as listZoomCells with the center index" <|
+            \randomIndex ->
+                let
+                    board =
+                        Board.init fiveByFiveVariant (Random.initialSeed 0)
+
+                    expected =
+                        Board.listZoomCells 12 identity board
+
+                    actual =
+                        Board.listZoomCells randomIndex identity board
                 in
                 Expect.equal expected actual
         ]

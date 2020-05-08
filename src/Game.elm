@@ -8,6 +8,7 @@ module Game exposing
     , hasBeenLost
     , init
     , listCells
+    , listZoomCells
     , toMonsterSummary
     , update
     )
@@ -109,6 +110,11 @@ hasBeenLost state =
 listCells : (( Board.CellIndex, Cell.Cell ) -> b) -> State -> List b
 listCells f state =
     Board.listCells f state.board
+
+
+listZoomCells : Board.CellIndex -> (( Board.CellIndex, Cell.Cell ) -> b) -> State -> List b
+listZoomCells index f state =
+    Board.listZoomCells index f state.board
 
 
 endGameIfPlayerIsDead : State -> State

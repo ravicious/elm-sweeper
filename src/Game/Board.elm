@@ -9,6 +9,7 @@ module Game.Board exposing
     , init
     , initWithZeroPower
     , listCells
+    , listZoomCells
     , pointToIndex
     , revealAllCells
     , revealCell
@@ -24,6 +25,7 @@ import Game.Variant as Variant exposing (Variant)
 import Maybe.Extra
 import Random
 import Random.List
+import Set
 import Tagged
 
 
@@ -33,10 +35,6 @@ type alias CellIndex =
 
 type alias Cells =
     Dict CellIndex Cell.Cell
-
-
-type alias Neighbors =
-    List Cell.Cell
 
 
 type alias State =
@@ -141,7 +139,19 @@ pointToCell state point =
         |> Maybe.andThen (indexToCell state)
 
 
-getNeighbors : State -> CellIndex -> Neighbors
+pointToIndexedCell : State -> Point -> Maybe ( CellIndex, Cell.Cell )
+pointToIndexedCell state point =
+    let
+        index =
+            pointToIndex state point
+
+        cell =
+            Maybe.andThen (indexToCell state) index
+    in
+    Maybe.map2 Tuple.pair index cell
+
+
+getNeighbors : State -> CellIndex -> List Cell.Cell
 getNeighbors =
     transformNeighborPoints pointToCell
 
@@ -251,6 +261,66 @@ updateCell f index state =
 listCells : (( CellIndex, Cell.Cell ) -> b) -> State -> List b
 listCells f state =
     Dict.toList state.cells |> List.map f
+
+
+listZoomCells : CellIndex -> (( CellIndex, Cell.Cell ) -> b) -> State -> List b
+listZoomCells targetIndex f state =
+    -- TODO: Correct the target index in case it's in a corner.
+    let
+        -- TODO: Explain what this all is for.
+        minX =
+            2
+
+        maxX =
+            state.columns - 3
+
+        minY =
+            2
+
+        maxY =
+            state.rows - 3
+
+        correctPoint point =
+            let
+                correctedX =
+                    clamp minX maxX point.x
+
+                correctedY =
+                    clamp minY maxY point.y
+            in
+            Point correctedX correctedY
+    in
+    targetIndex
+        |> indexToPoint state
+        |> Maybe.map correctPoint
+        |> Maybe.andThen (pointToIndex state)
+        |> Maybe.map
+            (\correctedIndex ->
+                let
+                    neighborIndexes =
+                        getNeighborIndexes state correctedIndex
+                in
+                -- `getNeighborIndexes` returns only neighbors of the given index. However, we don't
+                -- need to explicitly add correctedIndex to the set, because we iterate over the
+                -- neighbors and neighbors neighbors, so all those cells will eventually get added
+                -- to the set anyway.
+                neighborIndexes
+                    |> List.foldl
+                        (\neighborIndex accZoomCells ->
+                            getNeighborIndexes state neighborIndex
+                                |> List.foldl Set.insert accZoomCells
+                        )
+                        Set.empty
+                    |> Set.toList
+                    |> List.foldr
+                        (\index accCells ->
+                            indexToCell state index
+                                |> Maybe.map (\cell -> f ( index, cell ) :: accCells)
+                                |> Maybe.withDefault accCells
+                        )
+                        []
+            )
+        |> Maybe.withDefault []
 
 
 
