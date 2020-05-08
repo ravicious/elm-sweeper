@@ -4,7 +4,7 @@ import Assets
 import Browser
 import Dict
 import Game
-import Game.Board
+import Game.Board as Board
 import Game.Cell as Cell
 import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
@@ -44,16 +44,16 @@ type KeyDirection
 
 
 type KeyEvent
-    = KeyEvent KeyDirection String (Maybe Game.Board.CellIndex)
+    = KeyEvent KeyDirection String (Maybe Board.CellIndex)
 
 
-makeKeyEvent : KeyDirection -> ( String, Maybe Game.Board.CellIndex ) -> KeyEvent
+makeKeyEvent : KeyDirection -> ( String, Maybe Board.CellIndex ) -> KeyEvent
 makeKeyEvent keyDirection ( keyCode, maybeIndex ) =
     KeyEvent keyDirection keyCode maybeIndex
 
 
 type Msg
-    = ClickCell Game.Board.CellIndex
+    = ClickCell Board.CellIndex
     | InitializeWithSeed Int
     | KeyEventReceived KeyEvent
 
@@ -75,10 +75,10 @@ init flags =
 port initializeWithSeed : (Int -> msg) -> Sub msg
 
 
-port keyUp : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
+port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
-port keyDown : (( String, Maybe Game.Board.CellIndex ) -> msg) -> Sub msg
+port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
 port gameHasBeenLost : () -> Cmd msg
@@ -275,7 +275,7 @@ minSpanWidth s =
     [ style "display" "inline-block", style "min-width" s ]
 
 
-viewMonsterSummary : Game.Board.MonsterSummary -> Html Msg
+viewMonsterSummary : Board.MonsterSummary -> Html Msg
 viewMonsterSummary monsterSummary =
     div [ class "cluster" ]
         [ ul [ class "monster-summary" ]
