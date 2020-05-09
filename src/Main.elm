@@ -278,7 +278,7 @@ minSpanWidth s =
 viewMonsterSummary : Board.MonsterSummary -> Html Msg
 viewMonsterSummary monsterSummary =
     div [ class "cluster" ]
-        [ ul [ class "monster-summary" ]
+        [ ul [ class "monster-summary", style "justify-content" "center" ]
             (Dict.toList
                 monsterSummary
                 |> List.map
