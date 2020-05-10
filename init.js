@@ -19,20 +19,6 @@ window.initializeWithRandomSeed = function() {
   app.ports.initializeWithSeed.send(randomNumber)
 }
 
-app.ports.gameHasBeenLost.subscribe(function() {
-  // We can't display the popup immediately, because the player won't be able to see the effect of
-  // their last action.
-  // That's because `window.confirm` will block rendering.
-  //
-  // The timeout has to be greater than 1, because when set to one, it doesn't make any difference
-  // in Safari.
-  window.setTimeout(function() {
-    var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
-
-    wantsToPlayAgain && initializeWithRandomSeed()
-  }, 100)
-})
-
 var hitByMonsterTimeoutId, levelUpTimeoutId;
 
 app.ports.emitGameEvents.subscribe(function(gameEvents) {
@@ -72,6 +58,18 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
             }, 1500)
           })
         })
+        break
+      case 'GameOver':
+        // We can't display the popup immediately, because the player won't be able to see the
+        // effect of their last action. That's because `window.confirm` blocks rendering.
+        //
+        // The timeout has to be greater than 1, because when set to 1, rendering is still blocked
+        // in Safari.
+        window.setTimeout(function() {
+          var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
+
+          wantsToPlayAgain && initializeWithRandomSeed()
+        }, 100)
         break
     }
   })

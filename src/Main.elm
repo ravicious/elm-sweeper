@@ -92,9 +92,6 @@ port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
-port gameHasBeenLost : () -> Cmd msg
-
-
 port emitGameEvents : List String -> Cmd msg
 
 
@@ -184,11 +181,6 @@ update msg model =
             , Cmd.batch
                 [ emitGameEvents <| List.map Game.Event.toString emittedEvents
                 , startTimerCmd
-                , if Game.hasBeenLost newModel.game then
-                    gameHasBeenLost ()
-
-                  else
-                    Cmd.none
                 ]
             )
 
