@@ -13,7 +13,10 @@ import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Maybe.Extra
 import Random
+import Task
+import Time
 
 
 main : Program Flags Model Msg
@@ -35,6 +38,9 @@ type alias Model =
     { game : Game.State
     , initialNumber : Int
     , touchNeighbours : Bool
+    , startedAt : Maybe Time.Posix
+    , endedAt : Maybe Time.Posix
+    , timeNow : Maybe Time.Posix
     }
 
 
@@ -56,6 +62,8 @@ type Msg
     = ClickCell Board.CellIndex
     | InitializeWithSeed Int
     | KeyEventReceived KeyEvent
+    | StartTimer Time.Posix
+    | UpdateTimeNow Time.Posix
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -67,6 +75,9 @@ init flags =
     ( { game = Game.init Game.Variant.Normal seed
       , initialNumber = flags.randomNumber
       , touchNeighbours = False
+      , startedAt = Nothing
+      , endedAt = Nothing
+      , timeNow = Nothing
       }
     , Cmd.none
     )
@@ -88,11 +99,20 @@ port emitGameEvents : List String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
+    let
+        timerSubscription =
+            if Maybe.Extra.isJust model.startedAt && Game.isInProgress model.game then
+                Time.every 1000 UpdateTimeNow
+
+            else
+                Sub.none
+    in
     Sub.batch
         [ initializeWithSeed InitializeWithSeed
         , keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
+        , timerSubscription
         ]
 
 
@@ -136,12 +156,34 @@ update msg model =
                 ( updatedGame, emittedEvents ) =
                     Game.update (action index) model.game
 
+                updatedEndedAt =
+                    case model.endedAt of
+                        Just _ ->
+                            model.endedAt
+
+                        Nothing ->
+                            if Game.hasEnded updatedGame then
+                                -- Use `startedAt` in case the game ends after the first click,
+                                -- `timeNow` would be `Nothing` at in that scenario.
+                                Maybe.Extra.orList [ model.timeNow, model.startedAt ]
+
+                            else
+                                Nothing
+
                 newModel =
-                    { model | game = updatedGame }
+                    { model | game = updatedGame, endedAt = updatedEndedAt }
+
+                startTimerCmd =
+                    if Maybe.Extra.isNothing model.startedAt then
+                        Task.perform StartTimer Time.now
+
+                    else
+                        Cmd.none
             in
             ( newModel
             , Cmd.batch
                 [ emitGameEvents <| List.map Game.Event.toString emittedEvents
+                , startTimerCmd
                 , if Game.hasBeenLost newModel.game then
                     gameHasBeenLost ()
 
@@ -180,6 +222,12 @@ update msg model =
         InitializeWithSeed randomNumber ->
             init { randomNumber = randomNumber }
 
+        StartTimer time ->
+            ( { model | startedAt = Just time }, Cmd.none )
+
+        UpdateTimeNow time ->
+            ( { model | timeNow = Just time }, Cmd.none )
+
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
 updateTouchNeighbours keyDirection model =
@@ -204,7 +252,7 @@ view model =
                 renderCells model.game
             , div [ class "cluster bar" ]
                 [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
-                    [ viewStatus model.game
+                    [ viewStatus model
                     , viewMonsterSummary (Game.toMonsterSummary model.game)
                     ]
                 ]
@@ -240,8 +288,12 @@ gridStyle variant =
     node "style" [] [ text styles ]
 
 
-viewStatus : Game.State -> Html Msg
-viewStatus game =
+viewStatus : Model -> Html Msg
+viewStatus model =
+    let
+        game =
+            model.game
+    in
     div [ class "cluster" ]
         [ ul [ class "status" ]
             [ li [ class "status-item" ]
@@ -264,6 +316,10 @@ viewStatus game =
             , li [ class "status-item" ]
                 [ text "HP"
                 , span (minSpanWidth "2ch") [ text <| String.fromInt <| Game.getPlayerHp game ]
+                ]
+            , li [ class "status-item" ]
+                [ text "Time"
+                , viewGameDuration model.startedAt model.endedAt model.timeNow
                 ]
             ]
         ]
@@ -349,3 +405,33 @@ contentToHtml content =
 
         Content.Nothing ->
             text ""
+
+
+viewGameDuration : Maybe Time.Posix -> Maybe Time.Posix -> Maybe Time.Posix -> Html Msg
+viewGameDuration maybeStartedAt maybeEndedAt maybeTimeNow =
+    let
+        formatNumber =
+            String.fromInt >> String.padLeft 2 '0'
+
+        calculateDuration from to =
+            let
+                secondsSinceStart =
+                    (Time.posixToMillis to - Time.posixToMillis from) // 1000
+            in
+            ( secondsSinceStart // 60, remainderBy 60 secondsSinceStart )
+
+        ( minutes, seconds ) =
+            case ( maybeStartedAt, maybeEndedAt, maybeTimeNow ) of
+                ( Just startedAt, Just endedAt, _ ) ->
+                    calculateDuration startedAt endedAt
+
+                ( Just startedAt, Nothing, Just timeNow ) ->
+                    calculateDuration startedAt timeNow
+
+                _ ->
+                    ( 0, 0 )
+    in
+    span []
+        [ text <| formatNumber minutes
+        , small [] [ text <| formatNumber seconds ]
+        ]

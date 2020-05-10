@@ -83,6 +83,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.status small {
+  font-size: 70%;
+}
+
 .status-item {
   display: flex;
   flex-direction: column;
