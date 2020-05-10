@@ -245,16 +245,15 @@ viewStatus game =
     div [ class "cluster" ]
         [ ul [ class "status" ]
             [ li [ class "status-item" ]
-                [ text <| "Lvl: "
+                [ text "Lvl"
                 , span [] [ text <| String.fromInt <| Game.getPlayerLevel game ]
                 ]
             , li [ class "status-item" ]
-                [ text <| "XP: "
+                [ text "XP"
                 , span (minSpanWidth "3ch") [ text <| String.fromInt <| Game.getPlayerXp game ]
                 ]
             , li [ class "status-item" ]
-                [ text <|
-                    "Next Lvl: "
+                [ text "Next"
                 , span (minSpanWidth "3ch")
                     [ Game.getXpNeededForNextLevel game
                         |> Maybe.map String.fromInt
@@ -263,7 +262,7 @@ viewStatus game =
                     ]
                 ]
             , li [ class "status-item" ]
-                [ text <| "HP: "
+                [ text "HP"
                 , span (minSpanWidth "2ch") [ text <| String.fromInt <| Game.getPlayerHp game ]
                 ]
             ]
