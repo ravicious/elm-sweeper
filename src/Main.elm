@@ -301,7 +301,7 @@ viewStatus model =
                 , span (minSpanWidth "3ch")
                     [ Game.getXpNeededForNextLevel game
                         |> Maybe.map String.fromInt
-                        |> Maybe.withDefault ""
+                        |> Maybe.withDefault "0"
                         |> text
                     ]
                 ]
