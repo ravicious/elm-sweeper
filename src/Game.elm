@@ -6,7 +6,9 @@ module Game exposing
     , getPlayerXp
     , getXpNeededForNextLevel
     , hasBeenLost
+    , hasEnded
     , init
+    , isInProgress
     , listCells
     , toMonsterSummary
     , update
@@ -91,6 +93,11 @@ hasEnded state =
 
         Lost ->
             True
+
+
+isInProgress : State -> Bool
+isInProgress =
+    hasEnded >> not
 
 
 hasBeenLost : State -> Bool

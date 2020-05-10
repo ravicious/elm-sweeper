@@ -4,7 +4,7 @@
 }
 
 body {
-  font-family: sans-serif;
+  font-family: monospace;
   color: black;
   background-color: white;
 }
@@ -81,6 +81,17 @@ body {
   padding-left: 0;
   list-style: none;
   font-variant-numeric: tabular-nums;
+}
+
+.status small {
+  font-size: 70%;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .monster-summary {
