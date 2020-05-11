@@ -71,6 +71,13 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
           wantsToPlayAgain && initializeWithRandomSeed()
         }, 100)
         break
+      case 'GameWon':
+        window.setTimeout(function() {
+          var wantsToPlayAgain = window.confirm('Game won! Want to play again?')
+
+          wantsToPlayAgain && initializeWithRandomSeed()
+        }, 100)
+        break
     }
   })
 })

@@ -290,7 +290,7 @@ revealAllCells state =
 toMonsterSummary : State -> MonsterSummary
 toMonsterSummary { cells } =
     Dict.foldl
-        (\index cell monsterSummary ->
+        (\_ cell monsterSummary ->
             if Cell.isMonster cell then
                 let
                     powerInt =
