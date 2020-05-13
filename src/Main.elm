@@ -9,10 +9,12 @@ import Game.Cell as Cell
 import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
 import Game.Event
+import Game.GameResult as GameResult exposing (GameResult)
 import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode
 import Maybe.Extra
 import Random
 import Task
@@ -64,6 +66,7 @@ type Msg
     | KeyEventReceived KeyEvent
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
+    | GameResultNameReceived String
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -72,7 +75,7 @@ init flags =
         seed =
             Random.initialSeed flags.randomNumber
     in
-    ( { game = Game.init Game.Variant.Normal seed
+    ( { game = Game.init Game.Variant.Tiny seed
       , initialNumber = flags.randomNumber
       , touchNeighbours = False
       , startedAt = Nothing
@@ -92,7 +95,13 @@ port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
+port receiveGameResultName : (String -> msg) -> Sub msg
+
+
 port emitGameEvents : List String -> Cmd msg
+
+
+port saveGameResult : Json.Decode.Value -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -109,6 +118,7 @@ subscriptions model =
         [ initializeWithSeed InitializeWithSeed
         , keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
+        , receiveGameResultName GameResultNameReceived
         , timerSubscription
         ]
 
@@ -220,6 +230,16 @@ update msg model =
         UpdateTimeNow time ->
             ( { model | timeNow = Just time }, Cmd.none )
 
+        GameResultNameReceived name ->
+            let
+                saveGameResultCmd =
+                    modelToGameResult name model
+                        |> Maybe.map GameResult.encode
+                        |> Maybe.map saveGameResult
+                        |> Maybe.withDefault Cmd.none
+            in
+            ( model, saveGameResultCmd )
+
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
 updateTouchNeighbours keyDirection model =
@@ -233,6 +253,16 @@ updateTouchNeighbours keyDirection model =
                     True
     in
     ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
+
+
+modelToGameResult : String -> Model -> Maybe GameResult
+modelToGameResult name model =
+    Just GameResult
+        |> Maybe.Extra.andMap (Game.Variant.toIdentifier model.game.variant)
+        |> Maybe.Extra.andMap (Just name)
+        |> Maybe.Extra.andMap (Just model.initialNumber)
+        |> Maybe.Extra.andMap model.startedAt
+        |> Maybe.Extra.andMap model.endedAt
 
 
 view : Model -> Html.Html Msg

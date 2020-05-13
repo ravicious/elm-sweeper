@@ -1,6 +1,7 @@
-module Game.Variant exposing (Identifier(..), Variant, get)
+module Game.Variant exposing (Identifier(..), Variant, get, identifierToString, toIdentifier)
 
 import Game.ExpProgression as ExpProgression
+import List.Extra
 
 
 type Identifier
@@ -31,6 +32,30 @@ get identifier =
 
         Tiny ->
             tiny
+
+
+variants : List ( Identifier, Variant )
+variants =
+    [ ( Normal, normal ), ( Huge, huge ), ( Tiny, tiny ) ]
+
+
+toIdentifier : Variant -> Maybe Identifier
+toIdentifier variant =
+    List.Extra.find (Tuple.second >> (==) variant) variants
+        |> Maybe.map Tuple.first
+
+
+identifierToString : Identifier -> String
+identifierToString identifier =
+    case identifier of
+        Normal ->
+            "Normal"
+
+        Huge ->
+            "Huge"
+
+        Tiny ->
+            "Tiny"
 
 
 tiny : Variant

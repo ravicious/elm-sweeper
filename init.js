@@ -19,6 +19,16 @@ window.initializeWithRandomSeed = function() {
   app.ports.initializeWithSeed.send(randomNumber)
 }
 
+app.ports.saveGameResult.subscribe(function(gameResult) {
+  var key = gameResult.variant + 'Results'
+  var results = JSON.parse(localStorage.getItem(key)) || []
+
+  delete gameResult.variant
+  results.push(gameResult)
+
+  localStorage.setItem(key, JSON.stringify(results))
+})
+
 var hitByMonsterTimeoutId, levelUpTimeoutId;
 
 app.ports.emitGameEvents.subscribe(function(gameEvents) {
@@ -73,7 +83,11 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         break
       case 'GameWon':
         window.setTimeout(function() {
-          var wantsToPlayAgain = window.confirm('Game won! Want to play again?')
+          var name = window.prompt("Game won! Congrats! Who we should attribute this win to?")
+
+          app.ports.receiveGameResultName.send(name)
+
+          var wantsToPlayAgain = window.confirm('Want to play again?')
 
           wantsToPlayAgain && initializeWithRandomSeed()
         }, 100)
