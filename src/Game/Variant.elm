@@ -1,11 +1,23 @@
-module Game.Variant exposing (Identifier(..), Variant, get)
+module Game.Variant exposing
+    ( Identifier(..)
+    , Variant
+    , get
+    , identifierDecoder
+    , identifierToString
+    , stringToIdentifier
+    , toIdentifier
+    )
 
+import DecodeHelpers as DecodeH
 import Game.ExpProgression as ExpProgression
+import Json.Decode as Decode
+import List.Extra
 
 
 type Identifier
     = Normal
     | Huge
+    | Tiny
 
 
 type alias Variant =
@@ -27,6 +39,78 @@ get identifier =
 
         Huge ->
             huge
+
+        Tiny ->
+            tiny
+
+
+variants : List ( Identifier, Variant )
+variants =
+    [ ( Normal, normal ), ( Huge, huge ), ( Tiny, tiny ) ]
+
+
+toIdentifier : Variant -> Maybe Identifier
+toIdentifier variant =
+    List.Extra.find (Tuple.second >> (==) variant) variants
+        |> Maybe.map Tuple.first
+
+
+identifierToString : Identifier -> String
+identifierToString identifier =
+    case identifier of
+        Normal ->
+            "Normal"
+
+        Huge ->
+            "Huge"
+
+        Tiny ->
+            "Tiny"
+
+
+stringToIdentifier : String -> Maybe Identifier
+stringToIdentifier string =
+    case string of
+        "Normal" ->
+            Just Normal
+
+        "Huge" ->
+            Just Huge
+
+        "Tiny" ->
+            Just Tiny
+
+        _ ->
+            Nothing
+
+
+identifierDecoder : Decode.Decoder Identifier
+identifierDecoder =
+    Decode.string
+        |> DecodeH.mapAndPair stringToIdentifier
+        |> Decode.andThen
+            (\( originalString, maybeIdentifier ) ->
+                case maybeIdentifier of
+                    Just identifier ->
+                        Decode.succeed identifier
+
+                    Nothing ->
+                        Decode.fail <|
+                            "Couldn't decode given string into game variant identifier: "
+                                ++ originalString
+            )
+
+
+tiny : Variant
+tiny =
+    { rows = 6
+    , columns = 10
+    , minPower = 1
+    , maxPower = 1
+    , initialPlayerHp = 10
+    , cellConfiguration = [ ( 1, 5 ) ]
+    , expProgression = ExpProgression.init [ ( 1, 5 ) ]
+    }
 
 
 normal : Variant

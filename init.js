@@ -8,6 +8,7 @@ var app = Elm.Main.init({
     randomNumber: randomNumber,
   },
 })
+var resultsKey = 'results'
 
 window.initializeWithSeed = function(seed) {
   app.ports.initializeWithSeed.send(seed)
@@ -18,6 +19,20 @@ window.initializeWithRandomSeed = function() {
 
   app.ports.initializeWithSeed.send(randomNumber)
 }
+
+app.ports.saveGameResult.subscribe(function(gameResult) {
+  var results = JSON.parse(localStorage.getItem(resultsKey)) || []
+
+  results.push(gameResult)
+
+  localStorage.setItem(resultsKey, JSON.stringify(results))
+})
+
+app.ports.loadGameResults.subscribe(function(variant) {
+  var results = JSON.parse(localStorage.getItem(resultsKey)) || []
+
+  app.ports.receiveGameResults.send(results)
+})
 
 var hitByMonsterTimeoutId, levelUpTimeoutId;
 
@@ -67,6 +82,17 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         // in Safari.
         window.setTimeout(function() {
           var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
+
+          wantsToPlayAgain && initializeWithRandomSeed()
+        }, 100)
+        break
+      case 'GameWon':
+        window.setTimeout(function() {
+          var name = window.prompt("Game won! Congrats! Who we should attribute this win to?")
+
+          app.ports.receiveGameResultName.send(name)
+
+          var wantsToPlayAgain = window.confirm('Want to play again?')
 
           wantsToPlayAgain && initializeWithRandomSeed()
         }, 100)

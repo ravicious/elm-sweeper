@@ -14,6 +14,7 @@ module Game exposing
     , update
     )
 
+import Dict
 import Game.Board as Board
 import Game.Cell as Cell
 import Game.Direction exposing (Direction(..))
@@ -31,6 +32,7 @@ type alias State =
     { board : Board.State
     , player : Player.Player
     , variant : Variant.Variant
+    , variantIdentifier : Variant.Identifier
     , status : Status
     }
 
@@ -56,6 +58,7 @@ init identifier seed =
     { board = Board.init variant seed
     , player = Player.init variant.initialPlayerHp
     , variant = variant
+    , variantIdentifier = identifier
     , status = InProgress
     }
 
@@ -118,13 +121,26 @@ listCells f state =
     Board.listCells f state.board
 
 
-endGameIfPlayerIsDead : State -> State
-endGameIfPlayerIsDead state =
+endGameIfPlayerIsDeadOrMonstersAreKilled : State -> State
+endGameIfPlayerIsDeadOrMonstersAreKilled state =
     if Player.isDead state.player then
         { state | status = Lost, board = Board.revealAllCells state.board }
 
     else
-        state
+        let
+            monsterSummary =
+                toMonsterSummary state
+
+            areAllMonstersKilled =
+                monsterSummary
+                    |> Dict.values
+                    |> List.all ((==) 0)
+        in
+        if areAllMonstersKilled then
+            { state | status = Won, board = Board.revealAllCells state.board }
+
+        else
+            state
 
 
 emitEvents : State -> State -> Cell.Cell -> List Event
@@ -133,31 +149,41 @@ emitEvents oldState newState oldTouchedCell =
         []
 
     else
-        [ if hasEnded newState then
-            if hasBeenLost newState then
-                Just GameOver
+        let
+            statusEvent =
+                case newState.status of
+                    Won ->
+                        Just GameWon
 
-            else
-                Just GameWon
+                    Lost ->
+                        Just GameOver
 
-          else
-            Nothing
-        , if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
-            Just LevelUp
+                    InProgress ->
+                        Nothing
 
-          else
-            Nothing
-        , if Cell.isMonster oldTouchedCell then
-            if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
-                Just MonsterKilled
+            levelUpEvent =
+                if Tagged.untag newState.player.level > Tagged.untag oldState.player.level then
+                    Just LevelUp
 
-            else
-                Just HitByMonster
+                else
+                    Nothing
 
-          else
-            Nothing
-        ]
-            |> Maybe.Extra.values
+            monsterHitEvent =
+                if Cell.isMonster oldTouchedCell then
+                    if Player.isMorePowerfulThanCell oldState.player oldTouchedCell then
+                        Just MonsterKilled
+
+                    else
+                        Just HitByMonster
+
+                else
+                    Nothing
+        in
+        Maybe.Extra.values
+            [ statusEvent
+            , levelUpEvent
+            , monsterHitEvent
+            ]
 
 
 revealNeighborsWithZeroPowerIfZeroSurroundingPower : Board.CellIndex -> Board.State -> Board.State
@@ -196,7 +222,7 @@ update action state =
 
                                 newState =
                                     { state | board = updatedBoard, player = updatedPlayer }
-                                        |> endGameIfPlayerIsDead
+                                        |> endGameIfPlayerIsDeadOrMonstersAreKilled
                             in
                             ( newState
                             , emitEvents state newState cell

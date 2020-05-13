@@ -1,5 +1,6 @@
 port module Main exposing (main)
 
+import Array exposing (Array)
 import Assets
 import Browser
 import Dict
@@ -9,12 +10,15 @@ import Game.Cell as Cell
 import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
 import Game.Event
+import Game.GameResult as GameResult exposing (GameResult)
 import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode as Decode
 import Maybe.Extra
 import Random
+import RemoteData exposing (RemoteData)
 import Task
 import Time
 
@@ -41,7 +45,12 @@ type alias Model =
     , startedAt : Maybe Time.Posix
     , endedAt : Maybe Time.Posix
     , timeNow : Maybe Time.Posix
+    , gameResults : GameResults
     }
+
+
+type alias GameResults =
+    RemoteData Decode.Error (List GameResult)
 
 
 type KeyDirection
@@ -64,22 +73,28 @@ type Msg
     | KeyEventReceived KeyEvent
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
+    | GameResultNameReceived String
+    | GameResultsReceived Decode.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
+        identifier =
+            Game.Variant.Normal
+
         seed =
             Random.initialSeed flags.randomNumber
     in
-    ( { game = Game.init Game.Variant.Normal seed
+    ( { game = Game.init identifier seed
       , initialNumber = flags.randomNumber
       , touchNeighbours = False
       , startedAt = Nothing
       , endedAt = Nothing
       , timeNow = Nothing
+      , gameResults = RemoteData.NotAsked
       }
-    , Cmd.none
+    , loadGameResultsForGameVariant identifier
     )
 
 
@@ -92,7 +107,24 @@ port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
+port receiveGameResultName : (String -> msg) -> Sub msg
+
+
+port receiveGameResults : (Decode.Value -> msg) -> Sub msg
+
+
+port loadGameResults : String -> Cmd msg
+
+
+loadGameResultsForGameVariant : Game.Variant.Identifier -> Cmd msg
+loadGameResultsForGameVariant =
+    Game.Variant.identifierToString >> loadGameResults
+
+
 port emitGameEvents : List String -> Cmd msg
+
+
+port saveGameResult : Decode.Value -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -109,7 +141,9 @@ subscriptions model =
         [ initializeWithSeed InitializeWithSeed
         , keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
+        , receiveGameResultName GameResultNameReceived
         , timerSubscription
+        , receiveGameResults GameResultsReceived
         ]
 
 
@@ -220,6 +254,25 @@ update msg model =
         UpdateTimeNow time ->
             ( { model | timeNow = Just time }, Cmd.none )
 
+        GameResultNameReceived name ->
+            let
+                saveGameResultCmd =
+                    modelToGameResult name model
+                        |> Maybe.map GameResult.encode
+                        |> Maybe.map saveGameResult
+                        |> Maybe.withDefault Cmd.none
+            in
+            ( model, saveGameResultCmd )
+
+        GameResultsReceived rawGameResults ->
+            let
+                gameResults =
+                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
+                        |> Result.map (List.filter (.variant >> (==) model.game.variantIdentifier))
+                        |> RemoteData.fromResult
+            in
+            ( { model | gameResults = gameResults }, Cmd.none )
+
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
 updateTouchNeighbours keyDirection model =
@@ -233,6 +286,16 @@ updateTouchNeighbours keyDirection model =
                     True
     in
     ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
+
+
+modelToGameResult : String -> Model -> Maybe GameResult
+modelToGameResult name model =
+    Just GameResult
+        |> Maybe.Extra.andMap (Game.Variant.toIdentifier model.game.variant)
+        |> Maybe.Extra.andMap (Just name)
+        |> Maybe.Extra.andMap (Just model.initialNumber)
+        |> Maybe.Extra.andMap model.startedAt
+        |> Maybe.Extra.andMap model.endedAt
 
 
 view : Model -> Html.Html Msg
@@ -301,7 +364,7 @@ viewStatus model =
                 , span (minSpanWidth "3ch")
                     [ Game.getXpNeededForNextLevel game
                         |> Maybe.map String.fromInt
-                        |> Maybe.withDefault ""
+                        |> Maybe.withDefault "0"
                         |> text
                     ]
                 ]
