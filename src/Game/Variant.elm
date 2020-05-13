@@ -1,6 +1,16 @@
-module Game.Variant exposing (Identifier(..), Variant, get, identifierToString, toIdentifier)
+module Game.Variant exposing
+    ( Identifier(..)
+    , Variant
+    , get
+    , identifierDecoder
+    , identifierToString
+    , stringToIdentifier
+    , toIdentifier
+    )
 
+import DecodeHelpers as DecodeH
 import Game.ExpProgression as ExpProgression
+import Json.Decode as Decode
 import List.Extra
 
 
@@ -56,6 +66,39 @@ identifierToString identifier =
 
         Tiny ->
             "Tiny"
+
+
+stringToIdentifier : String -> Maybe Identifier
+stringToIdentifier string =
+    case string of
+        "Normal" ->
+            Just Normal
+
+        "Huge" ->
+            Just Huge
+
+        "Tiny" ->
+            Just Tiny
+
+        _ ->
+            Nothing
+
+
+identifierDecoder : Decode.Decoder Identifier
+identifierDecoder =
+    Decode.string
+        |> DecodeH.mapAndPair stringToIdentifier
+        |> Decode.andThen
+            (\( originalString, maybeIdentifier ) ->
+                case maybeIdentifier of
+                    Just identifier ->
+                        Decode.succeed identifier
+
+                    Nothing ->
+                        Decode.fail <|
+                            "Couldn't decode given string into game variant identifier: "
+                                ++ originalString
+            )
 
 
 tiny : Variant

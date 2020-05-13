@@ -1,5 +1,6 @@
 port module Main exposing (main)
 
+import Array exposing (Array)
 import Assets
 import Browser
 import Dict
@@ -14,9 +15,10 @@ import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode
+import Json.Decode as Decode
 import Maybe.Extra
 import Random
+import RemoteData exposing (RemoteData)
 import Task
 import Time
 
@@ -43,7 +45,12 @@ type alias Model =
     , startedAt : Maybe Time.Posix
     , endedAt : Maybe Time.Posix
     , timeNow : Maybe Time.Posix
+    , gameResults : GameResults
     }
+
+
+type alias GameResults =
+    RemoteData Decode.Error (List GameResult)
 
 
 type KeyDirection
@@ -67,22 +74,27 @@ type Msg
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
     | GameResultNameReceived String
+    | GameResultsReceived Decode.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
+        identifier =
+            Game.Variant.Normal
+
         seed =
             Random.initialSeed flags.randomNumber
     in
-    ( { game = Game.init Game.Variant.Tiny seed
+    ( { game = Game.init identifier seed
       , initialNumber = flags.randomNumber
       , touchNeighbours = False
       , startedAt = Nothing
       , endedAt = Nothing
       , timeNow = Nothing
+      , gameResults = RemoteData.NotAsked
       }
-    , Cmd.none
+    , loadGameResultsForGameVariant identifier
     )
 
 
@@ -98,10 +110,21 @@ port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 port receiveGameResultName : (String -> msg) -> Sub msg
 
 
+port receiveGameResults : (Decode.Value -> msg) -> Sub msg
+
+
+port loadGameResults : String -> Cmd msg
+
+
+loadGameResultsForGameVariant : Game.Variant.Identifier -> Cmd msg
+loadGameResultsForGameVariant =
+    Game.Variant.identifierToString >> loadGameResults
+
+
 port emitGameEvents : List String -> Cmd msg
 
 
-port saveGameResult : Json.Decode.Value -> Cmd msg
+port saveGameResult : Decode.Value -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -120,6 +143,7 @@ subscriptions model =
         , keyDown (KeyEventReceived << makeKeyEvent Down)
         , receiveGameResultName GameResultNameReceived
         , timerSubscription
+        , receiveGameResults GameResultsReceived
         ]
 
 
@@ -239,6 +263,15 @@ update msg model =
                         |> Maybe.withDefault Cmd.none
             in
             ( model, saveGameResultCmd )
+
+        GameResultsReceived rawGameResults ->
+            let
+                gameResults =
+                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
+                        |> Result.map (List.filter (.variant >> (==) model.game.variantIdentifier))
+                        |> RemoteData.fromResult
+            in
+            ( { model | gameResults = gameResults }, Cmd.none )
 
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )

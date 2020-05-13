@@ -32,6 +32,7 @@ type alias State =
     { board : Board.State
     , player : Player.Player
     , variant : Variant.Variant
+    , variantIdentifier : Variant.Identifier
     , status : Status
     }
 
@@ -57,6 +58,7 @@ init identifier seed =
     { board = Board.init variant seed
     , player = Player.init variant.initialPlayerHp
     , variant = variant
+    , variantIdentifier = identifier
     , status = InProgress
     }
 

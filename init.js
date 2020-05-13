@@ -8,6 +8,7 @@ var app = Elm.Main.init({
     randomNumber: randomNumber,
   },
 })
+var resultsKey = 'results'
 
 window.initializeWithSeed = function(seed) {
   app.ports.initializeWithSeed.send(seed)
@@ -20,13 +21,17 @@ window.initializeWithRandomSeed = function() {
 }
 
 app.ports.saveGameResult.subscribe(function(gameResult) {
-  var key = gameResult.variant + 'Results'
-  var results = JSON.parse(localStorage.getItem(key)) || []
+  var results = JSON.parse(localStorage.getItem(resultsKey)) || []
 
-  delete gameResult.variant
   results.push(gameResult)
 
-  localStorage.setItem(key, JSON.stringify(results))
+  localStorage.setItem(resultsKey, JSON.stringify(results))
+})
+
+app.ports.loadGameResults.subscribe(function(variant) {
+  var results = JSON.parse(localStorage.getItem(resultsKey)) || []
+
+  app.ports.receiveGameResults.send(results)
 })
 
 var hitByMonsterTimeoutId, levelUpTimeoutId;
