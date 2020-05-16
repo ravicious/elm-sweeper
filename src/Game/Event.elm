@@ -1,4 +1,8 @@
-module Game.Event exposing (Event(..), toString)
+module Game.Event exposing (Event(..), encode, toString)
+
+import Game.GameResult
+import Json.Encode as Encode
+import Json.Encode.Extra as EncodeExtra
 
 
 type Event
@@ -26,3 +30,16 @@ toString event =
 
         GameWon ->
             "GameWon"
+
+
+encode : { calculatePlacing : () -> Maybe Game.GameResult.Placing } -> Event -> Encode.Value
+encode context event =
+    case event of
+        GameWon ->
+            Encode.object
+                [ ( "type", Encode.string (toString event) )
+                , ( "place", EncodeExtra.maybe Game.GameResult.encodePlacing (context.calculatePlacing ()) )
+                ]
+
+        _ ->
+            Encode.object [ ( "type", Encode.string (toString event) ) ]

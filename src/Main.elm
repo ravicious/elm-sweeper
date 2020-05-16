@@ -81,7 +81,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         identifier =
-            Game.Variant.Normal
+            Game.Variant.Tiny
 
         seed =
             Random.initialSeed flags.randomNumber
@@ -121,7 +121,7 @@ loadGameResultsForGameVariant =
     Game.Variant.identifierToString >> loadGameResults
 
 
-port emitGameEvents : List String -> Cmd msg
+port emitGameEvents : List Decode.Value -> Cmd msg
 
 
 port saveGameResult : Decode.Value -> Cmd msg
@@ -213,7 +213,8 @@ update msg model =
             in
             ( newModel
             , Cmd.batch
-                [ emitGameEvents <| List.map Game.Event.toString emittedEvents
+                -- TODO: Refactor that context creation to a separate method.
+                [ emitGameEvents <| List.map (Game.Event.encode { calculatePlacing = \() -> modelToPlacing newModel }) emittedEvents
                 , startTimerCmd
                 ]
             )
@@ -255,6 +256,8 @@ update msg model =
             ( { model | timeNow = Just time }, Cmd.none )
 
         GameResultNameReceived name ->
+            -- TODO Save the game immediately, not after receiving the name.
+            -- Here we'll need to update the game result by the start time.
             let
                 saveGameResultCmd =
                     modelToGameResult name model
@@ -296,6 +299,20 @@ modelToGameResult name model =
         |> Maybe.Extra.andMap (Just model.initialNumber)
         |> Maybe.Extra.andMap model.startedAt
         |> Maybe.Extra.andMap model.endedAt
+
+
+modelToPlacing : Model -> Maybe GameResult.Placing
+modelToPlacing model =
+    let
+        maybeTiming =
+            Just GameResult.Timing
+                |> Maybe.Extra.andMap model.startedAt
+                |> Maybe.Extra.andMap model.endedAt
+    in
+    Maybe.map2
+        GameResult.calculatePlacing
+        (RemoteData.toMaybe model.gameResults)
+        maybeTiming
 
 
 view : Model -> Html.Html Msg

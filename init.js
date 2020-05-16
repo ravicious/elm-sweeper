@@ -38,7 +38,7 @@ var hitByMonsterTimeoutId, levelUpTimeoutId;
 
 app.ports.emitGameEvents.subscribe(function(gameEvents) {
   gameEvents.forEach(function(gameEvent) {
-    switch (gameEvent) {
+    switch (gameEvent.type) {
       case 'HitByMonster':
         // If already happening, just make the animation last longer.
         if (hitByMonsterTimeoutId) {
@@ -88,7 +88,9 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         break
       case 'GameWon':
         window.setTimeout(function() {
-          var name = window.prompt("Game won! Congrats! Who we should attribute this win to?")
+          var place = gameEvent.place
+          // TODO: Make the message nicer.
+          var name = window.prompt(`Game won! Congrats! ${place.place}; Who we should attribute this win to?`)
 
           app.ports.receiveGameResultName.send(name)
 
