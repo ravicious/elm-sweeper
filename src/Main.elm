@@ -7,6 +7,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Random
+import Scene.ChooseVariant
 import Scene.Game
 
 
@@ -37,21 +38,16 @@ type Scene
 
 
 type Msg
-    = GameSceneMsg Scene.Game.Msg
+    = InitializeGame Game.Variant.Identifier
+    | GameSceneMsg Scene.Game.Msg
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        ( sceneModel, sceneCmd ) =
-            Scene.Game.init { intSeed = flags.randomNumber, variantIdentifier = Game.Variant.Normal }
-    in
-    ( { scene = Game sceneModel
-
-      -- TODO: Rewrite seed and intSeed generation.
+    ( { scene = ChooseVariant
       , seed = Random.initialSeed flags.randomNumber
       }
-    , Cmd.map GameSceneMsg sceneCmd
+    , Cmd.none
     )
 
 
@@ -72,6 +68,20 @@ update msg model =
             ( model, Cmd.none )
     in
     case ( model.scene, msg ) of
+        ( ChooseVariant, InitializeGame variantIdentifier ) ->
+            let
+                ( intSeed, nextSeed ) =
+                    Random.step intSeedGenerator model.seed
+
+                ( sceneModel, sceneCmd ) =
+                    Scene.Game.init { intSeed = intSeed, variantIdentifier = variantIdentifier }
+            in
+            ( { scene = Game sceneModel
+              , seed = nextSeed
+              }
+            , Cmd.map GameSceneMsg sceneCmd
+            )
+
         ( ChooseVariant, _ ) ->
             noop
 
@@ -82,12 +92,20 @@ update msg model =
             in
             ( { model | scene = Game newSceneModel }, Cmd.map GameSceneMsg cmds )
 
+        ( Game _, _ ) ->
+            noop
+
+
+intSeedGenerator : Random.Generator Int
+intSeedGenerator =
+    Random.int 0 Random.maxInt
+
 
 view : Model -> Html Msg
 view model =
     case model.scene of
         ChooseVariant ->
-            Debug.todo "Implement choose variant view"
+            Scene.ChooseVariant.view InitializeGame
 
         Game sceneModel ->
             Html.map GameSceneMsg <| Scene.Game.view sceneModel

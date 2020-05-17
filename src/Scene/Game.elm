@@ -49,7 +49,6 @@ type alias GameResults =
 
 type Msg
     = ClickCell Board.CellIndex
-    | InitializeWithSeed Int
     | KeyEventReceived KeyEvent
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
@@ -112,9 +111,6 @@ loadGameResultsForGameVariant =
 -- Ports for subscriptions
 
 
-port initializeWithSeed : (Int -> msg) -> Sub msg
-
-
 port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
@@ -138,8 +134,7 @@ subscriptions model =
                 Sub.none
     in
     Sub.batch
-        [ initializeWithSeed InitializeWithSeed
-        , keyUp (KeyEventReceived << makeKeyEvent Up)
+        [ keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
         , receiveGameResultName GameResultNameReceived
         , timerSubscription
@@ -224,9 +219,6 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
-
-        InitializeWithSeed randomNumber ->
-            init { intSeed = randomNumber, variantIdentifier = model.game.variantIdentifier }
 
         StartTimer time ->
             ( { model | startedAt = Just time }, Cmd.none )

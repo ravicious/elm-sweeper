@@ -10,15 +10,6 @@ var app = Elm.Main.init({
 })
 var resultsKey = 'results'
 
-window.initializeWithSeed = function(seed) {
-  app.ports.initializeWithSeed.send(seed)
-}
-
-window.initializeWithRandomSeed = function() {
-  var randomNumber = Math.floor(Math.random()*0xFFFFFFFF)
-
-  app.ports.initializeWithSeed.send(randomNumber)
-}
 
 app.ports.saveGameResult.subscribe(function(gameResult) {
   var results = JSON.parse(localStorage.getItem(resultsKey)) || []
@@ -83,7 +74,7 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         window.setTimeout(function() {
           var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
 
-          wantsToPlayAgain && initializeWithRandomSeed()
+          wantsToPlayAgain && window.location.reload()
         }, 100)
         break
       case 'GameWon':
@@ -94,7 +85,7 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
 
           var wantsToPlayAgain = window.confirm('Want to play again?')
 
-          wantsToPlayAgain && initializeWithRandomSeed()
+          wantsToPlayAgain && window.location.reload()
         }, 100)
         break
     }
