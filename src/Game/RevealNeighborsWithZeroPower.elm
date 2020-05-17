@@ -73,7 +73,7 @@ updateScanState f boardState index scanState =
 addIndexToRevealIfShouldBeRevealed : Board.State -> CellIndex -> ScanState -> ScanState
 addIndexToRevealIfShouldBeRevealed =
     updateScanState <|
-        \boardState index cell scanState ->
+        \_ index cell scanState ->
             if Cell.hasZeroPower cell then
                 addIndexToReveal index scanState
 

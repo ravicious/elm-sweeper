@@ -118,11 +118,6 @@ getSurroundingPower (Cell commonState _) =
     commonState.surroundingPower
 
 
-getBet : Cell -> Bet
-getBet (Cell commonState _) =
-    commonState.bet
-
-
 touch : Cell -> Cell
 touch (Cell commonState specificState) =
     Cell commonState <|

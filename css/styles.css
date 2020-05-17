@@ -1,5 +1,6 @@
 :root {
   --base-font-size: calc(1rem + 0.5vw);
+  --measure: 60ch;
   font-size: var(--base-font-size);
 }
 
@@ -189,6 +190,10 @@ body.shaking .grid {
   justify-content: flex-start;
 }
 
+.smaller {
+  --space: calc(1.5rem / 1.5 / 1.5) !important;
+}
+
 .stack > * {
   margin-top: 0;
   margin-bottom: 0;
@@ -213,4 +218,39 @@ body.shaking .grid {
 
 .cluster > * > * {
   margin: calc(var(--space) / 2);
+}
+
+.center {
+  box-sizing: content-box;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: var(--measure);
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.cover > * {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cover > :first-child:not(.centered) {
+  margin-top: 0;
+}
+
+.cover > :last-child:not(.centered) {
+  margin-bottom: 0;
+}
+
+.cover > .centered {
+  margin-top: auto;
+  margin-bottom: auto;
 }
