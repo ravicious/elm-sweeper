@@ -157,7 +157,7 @@ transformNeighborPoints f state index =
         |> List.foldl
             (\point xs ->
                 f state point
-                    |> Maybe.map (\a -> (::) a xs)
+                    |> Maybe.map (\a -> a :: xs)
                     |> Maybe.withDefault xs
             )
             []

@@ -59,7 +59,7 @@ reduceHpIfCellIsMorePowerful cell player =
     if not <| isMorePowerfulThanCell player cell then
         let
             currentHpMinusCellHitPower =
-                (-) (Tagged.untag player.hp) (calculateCellHitPower player cell)
+                Tagged.untag player.hp - calculateCellHitPower player cell
         in
         { player | hp = Tagged.tag <| max currentHpMinusCellHitPower 0 }
 
