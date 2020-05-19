@@ -1,0 +1,46 @@
+Mode select
+  Model:
+    * seed
+
+High score list
+  Model:
+    * variant
+    * remote data game results
+  Subscriptions:
+    * load game results
+    * receive game results
+
+Game
+  Model:
+    * seed
+    * game
+    * variant
+    * time stuff
+    * keyboard stuff
+  Subscriptions:
+    * key up
+    * key down
+    * timer subscription
+  Commands:
+    * emit game events
+
+Post-game high scores
+  Model:
+    * game
+    * variant
+    * name (Maybe String)
+    * game result
+    * remote data game results
+  Subscriptions:
+    * receive game results
+  Commands:
+    * load game results
+    * save game result
+
+Game over
+  Model:
+    * game
+    * variant
+
+TODO:
+  Transitions between states?

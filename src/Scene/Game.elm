@@ -4,6 +4,8 @@ port module Scene.Game exposing
     , Model
     , Msg
     , init
+    , modelToGameResult
+    , modelToGameStatus
     , subscriptions
     , update
     , view
@@ -37,9 +39,6 @@ type alias Model =
     , startedAt : Maybe Time.Posix
     , endedAt : Maybe Time.Posix
     , timeNow : Maybe Time.Posix
-
-    -- TODO: Move this out to a separate scene.
-    , gameResults : GameResults
     }
 
 
@@ -52,8 +51,6 @@ type Msg
     | KeyEventReceived KeyEvent
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
-    | GameResultNameReceived String
-    | GameResultsReceived Decode.Value
 
 
 type KeyEvent
@@ -83,9 +80,8 @@ init { intSeed, variantIdentifier } =
       , startedAt = Nothing
       , endedAt = Nothing
       , timeNow = Nothing
-      , gameResults = RemoteData.NotAsked
       }
-    , loadGameResultsForGameVariant variantIdentifier
+    , Cmd.none
     )
 
 
@@ -93,18 +89,7 @@ init { intSeed, variantIdentifier } =
 -- Ports for commands
 
 
-port saveGameResult : Decode.Value -> Cmd msg
-
-
 port emitGameEvents : List String -> Cmd msg
-
-
-port loadGameResults : String -> Cmd msg
-
-
-loadGameResultsForGameVariant : Game.Variant.Identifier -> Cmd msg
-loadGameResultsForGameVariant =
-    Game.Variant.identifierToString >> loadGameResults
 
 
 
@@ -115,12 +100,6 @@ port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
 port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
-
-
-port receiveGameResultName : (String -> msg) -> Sub msg
-
-
-port receiveGameResults : (Decode.Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
@@ -136,9 +115,7 @@ subscriptions model =
     Sub.batch
         [ keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
-        , receiveGameResultName GameResultNameReceived
         , timerSubscription
-        , receiveGameResults GameResultsReceived
         ]
 
 
@@ -226,25 +203,6 @@ update msg model =
         UpdateTimeNow time ->
             ( { model | timeNow = Just time }, Cmd.none )
 
-        GameResultNameReceived name ->
-            let
-                saveGameResultCmd =
-                    modelToGameResult name model
-                        |> Maybe.map GameResult.encode
-                        |> Maybe.map saveGameResult
-                        |> Maybe.withDefault Cmd.none
-            in
-            ( model, saveGameResultCmd )
-
-        GameResultsReceived rawGameResults ->
-            let
-                gameResults =
-                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
-                        |> Result.map (List.filter (.variant >> (==) model.game.variantIdentifier))
-                        |> RemoteData.fromResult
-            in
-            ( { model | gameResults = gameResults }, Cmd.none )
-
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
 updateTouchNeighbours keyDirection model =
@@ -260,14 +218,44 @@ updateTouchNeighbours keyDirection model =
     ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
 
 
-modelToGameResult : String -> Model -> Maybe GameResult
-modelToGameResult name model =
+modelToGameResult : Model -> Maybe GameResult
+modelToGameResult model =
     Just GameResult
         |> Maybe.Extra.andMap (Game.Variant.toIdentifier model.game.variant)
-        |> Maybe.Extra.andMap (Just name)
+        |> Maybe.Extra.andMap (Just "")
         |> Maybe.Extra.andMap (Just model.intSeed)
         |> Maybe.Extra.andMap model.startedAt
         |> Maybe.Extra.andMap model.endedAt
+
+
+modelToGameStatus : Model -> Game.Status
+modelToGameStatus =
+    .game >> .status
+
+
+keyCodeToDirection : String -> Maybe Direction
+keyCodeToDirection string =
+    case string of
+        "KeyA" ->
+            Just Left
+
+        "KeyS" ->
+            Just Left
+
+        "ArrowLeft" ->
+            Just Left
+
+        "KeyD" ->
+            Just Right
+
+        "KeyF" ->
+            Just Right
+
+        "ArrowRight" ->
+            Just Right
+
+        _ ->
+            Nothing
 
 
 view : Model -> Html Msg
@@ -462,28 +450,3 @@ viewGameDuration maybeStartedAt maybeEndedAt maybeTimeNow =
         [ text <| formatNumber minutes
         , small [] [ text <| formatNumber seconds ]
         ]
-
-
-keyCodeToDirection : String -> Maybe Direction
-keyCodeToDirection string =
-    case string of
-        "KeyA" ->
-            Just Left
-
-        "KeyS" ->
-            Just Left
-
-        "ArrowLeft" ->
-            Just Left
-
-        "KeyD" ->
-            Just Right
-
-        "KeyF" ->
-            Just Right
-
-        "ArrowRight" ->
-            Just Right
-
-        _ ->
-            Nothing

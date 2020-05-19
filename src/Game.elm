@@ -1,6 +1,7 @@
 module Game exposing
     ( Action(..)
     , State
+    , Status(..)
     , getPlayerHp
     , getPlayerLevel
     , getPlayerXp

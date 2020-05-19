@@ -46,7 +46,7 @@ viewVariants : List (Html msg)
 viewVariants =
     let
         variants =
-            [ ( Game.Variant.Normal, "Normal" ), ( Game.Variant.Huge, "Huge" ) ]
+            [ ( Game.Variant.Tiny, "Tiny" ), ( Game.Variant.Normal, "Normal" ), ( Game.Variant.Huge, "Huge" ) ]
     in
     List.map
         (\( variantIdentifier, labelText ) ->
