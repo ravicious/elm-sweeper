@@ -2,6 +2,22 @@
   --base-font-size: calc(1rem + 0.5vw);
   --measure: 60ch;
   font-size: var(--base-font-size);
+  --ratio: 1.5;
+  --s-5: calc(var(--s-4) / var(--ratio));
+  --s-4: calc(var(--s-3) / var(--ratio));
+  --s-3: calc(var(--s-2) / var(--ratio));
+  --s-2: calc(var(--s-1) / var(--ratio));
+  --s-1: calc(var(--s0) / var(--ratio));
+  --s0: 1rem;
+  --s1: calc(var(--s0) * var(--ratio));
+  --s2: calc(var(--s1) * var(--ratio));
+  --s3: calc(var(--s2) * var(--ratio));
+  --s4: calc(var(--s3) * var(--ratio));
+  --s5: calc(var(--s4) * var(--ratio));
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -12,12 +28,29 @@ body {
 
 /* Grid & cells */
 
+.grid-container {
+  position: relative;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 10;
+}
+
 .grid {
   display: grid;
   justify-items: stretch;
   width: 100%;
   /* Needed for FX on :before elements. */
   position: relative;
+}
+
+.grid-overlay + .grid {
+  opacity: 0.5;
 }
 
 .grid-cell {
@@ -125,6 +158,44 @@ body {
 .seed {
   margin-left: auto;
   font-size: calc(var(--base-font-size) / 1.5 / 1.5);
+}
+
+/* Game won */
+
+.game-won {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+}
+
+.results {
+  flex: 1;
+  width: 100%;
+  max-width: 30ch;
+
+  padding-left: 0;
+  list-style: none;
+
+  display: grid;
+  grid-template-columns: 5ch auto 4ch;
+  column-gap: var(--s-2);
+
+  word-break: break-word;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.results li {
+  display: contents;
+}
+
+.result__place {
+  text-align: right;
+}
+
+.results input {
+  font-family: inherit;
+  width: 98%;
 }
 
 /* Effects */
@@ -235,6 +306,10 @@ body.shaking .grid {
   flex-direction: column;
   min-height: 100vh;
   padding: 1rem;
+}
+
+.cover.whole-parent {
+  min-height: 100%;
 }
 
 .cover > * {

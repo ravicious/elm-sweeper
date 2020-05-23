@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as Decode
+import Maybe.Extra
 
 
 view : (Game.Variant.Identifier -> msg) -> Html msg
@@ -16,11 +17,10 @@ view initializeGameMsg =
                 |> DecodeHelpers.mapAndPair Game.Variant.stringToIdentifier
                 |> Decode.andThen
                     (\( originalString, maybeIdentifier ) ->
-                        maybeIdentifier
-                            |> Maybe.map initializeGameMsg
-                            |> Maybe.map Decode.succeed
-                            |> Maybe.withDefault
-                                (Decode.fail ("Unknown variant identifier " ++ originalString))
+                        Maybe.Extra.unwrap
+                            (Decode.fail ("Unknown variant identifier " ++ originalString))
+                            (Decode.succeed << initializeGameMsg)
+                            maybeIdentifier
                     )
                 |> Decode.map (\a -> ( a, True ))
     in

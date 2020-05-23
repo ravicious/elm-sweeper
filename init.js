@@ -8,20 +8,24 @@ var app = Elm.Main.init({
     randomNumber: randomNumber,
   },
 })
+
 var resultsKey = 'results'
-
-
 app.ports.saveGameResult.subscribe(function(gameResult) {
   var results = JSON.parse(localStorage.getItem(resultsKey)) || []
 
   results.push(gameResult)
 
   localStorage.setItem(resultsKey, JSON.stringify(results))
+  app.ports.receiveGameResults.send(results)
 })
 
-app.ports.loadGameResults.subscribe(function(variant) {
+app.ports.updateNameInGameResult.subscribe(function([gameResult, newName]) {
   var results = JSON.parse(localStorage.getItem(resultsKey)) || []
 
+  var resultToUpdate = results.find((result) => result.startedAt == gameResult.startedAt)
+  resultToUpdate.name = newName
+
+  localStorage.setItem(resultsKey, JSON.stringify(results))
   app.ports.receiveGameResults.send(results)
 })
 
@@ -73,17 +77,6 @@ app.ports.emitGameEvents.subscribe(function(gameEvents) {
         // in Safari.
         window.setTimeout(function() {
           var wantsToPlayAgain = window.confirm('Game over! Want to play again?')
-
-          wantsToPlayAgain && window.location.reload()
-        }, 100)
-        break
-      case 'GameWon':
-        window.setTimeout(function() {
-          var name = window.prompt("Game won! Congrats! Who we should attribute this win to?")
-
-          app.ports.receiveGameResultName.send(name)
-
-          var wantsToPlayAgain = window.confirm('Want to play again?')
 
           wantsToPlayAgain && window.location.reload()
         }, 100)
