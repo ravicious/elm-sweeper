@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Game
 import Game.Direction exposing (Direction(..))
 import Game.Variant
 import Html exposing (..)
@@ -9,6 +10,7 @@ import Html.Events exposing (..)
 import Random
 import Scene.ChooseVariant
 import Scene.Game
+import Scene.GameWon
 
 
 main : Program Flags Model Msg
@@ -35,11 +37,13 @@ type alias Model =
 type Scene
     = ChooseVariant
     | Game Scene.Game.Model
+    | GameWon Scene.GameWon.Model
 
 
 type Msg
     = InitializeGame Game.Variant.Identifier
     | GameSceneMsg Scene.Game.Msg
+    | GameWonSceneMsg Scene.GameWon.Msg
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -59,6 +63,9 @@ subscriptions model =
 
         Game sceneModel ->
             Sub.map GameSceneMsg (Scene.Game.subscriptions sceneModel)
+
+        GameWon sceneModel ->
+            Sub.map GameWonSceneMsg (Scene.GameWon.subscriptions sceneModel)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -85,14 +92,50 @@ update msg model =
         ( ChooseVariant, _ ) ->
             noop
 
-        ( Game gameSceneModal, GameSceneMsg gameSceneMsg ) ->
+        ( Game gameSceneModel, GameSceneMsg gameSceneMsg ) ->
             let
-                ( newSceneModel, cmds ) =
-                    Scene.Game.update gameSceneMsg gameSceneModal
+                ( newGameSceneModel, gameSceneCmds ) =
+                    Scene.Game.update gameSceneMsg gameSceneModel
+                        |> Tuple.mapSecond (Cmd.map GameSceneMsg)
             in
-            ( { model | scene = Game newSceneModel }, Cmd.map GameSceneMsg cmds )
+            case Scene.Game.modelToGameStatus newGameSceneModel of
+                Game.Won ->
+                    case Scene.Game.modelToGameResult newGameSceneModel of
+                        Just gameResult ->
+                            let
+                                ( gameWonModel, gameWonCmds ) =
+                                    Scene.GameWon.init newGameSceneModel.game gameResult
+                                        |> Tuple.mapSecond (Cmd.map GameWonSceneMsg)
+                            in
+                            ( { model | scene = GameWon gameWonModel }
+                            , Cmd.batch
+                                [ gameSceneCmds
+                                , gameWonCmds
+                                ]
+                            )
+
+                        Nothing ->
+                            ( { model | scene = Game newGameSceneModel }, gameSceneCmds )
+
+                _ ->
+                    ( { model | scene = Game newGameSceneModel }, gameSceneCmds )
 
         ( Game _, _ ) ->
+            noop
+
+        ( GameWon _, GameWonSceneMsg Scene.GameWon.PlayAgain ) ->
+            ( { model | scene = ChooseVariant }, Cmd.none )
+
+        ( GameWon sceneModel, GameWonSceneMsg sceneMsg ) ->
+            let
+                ( newSceneModel, sceneCmds ) =
+                    Scene.GameWon.update sceneMsg sceneModel
+                        |> Tuple.mapFirst GameWon
+                        |> Tuple.mapSecond (Cmd.map GameWonSceneMsg)
+            in
+            ( { model | scene = newSceneModel }, sceneCmds )
+
+        ( GameWon _, _ ) ->
             noop
 
 
@@ -109,3 +152,6 @@ view model =
 
         Game sceneModel ->
             Html.map GameSceneMsg <| Scene.Game.view sceneModel
+
+        GameWon sceneModel ->
+            Html.map GameWonSceneMsg <| Scene.GameWon.view sceneModel

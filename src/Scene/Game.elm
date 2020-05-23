@@ -4,28 +4,25 @@ port module Scene.Game exposing
     , Model
     , Msg
     , init
+    , modelToGameResult
+    , modelToGameStatus
     , subscriptions
     , update
     , view
     )
 
-import Assets
-import Dict
 import Game
 import Game.Board as Board
-import Game.Cell as Cell
-import Game.Cell.Content as Content
 import Game.Direction exposing (Direction(..))
 import Game.Event
 import Game.GameResult as GameResult exposing (GameResult)
 import Game.Variant
+import Game.View
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode as Decode
 import Maybe.Extra
 import Random
-import RemoteData exposing (RemoteData)
 import Task
 import Time
 
@@ -37,14 +34,7 @@ type alias Model =
     , startedAt : Maybe Time.Posix
     , endedAt : Maybe Time.Posix
     , timeNow : Maybe Time.Posix
-
-    -- TODO: Move this out to a separate scene.
-    , gameResults : GameResults
     }
-
-
-type alias GameResults =
-    RemoteData Decode.Error (List GameResult)
 
 
 type Msg
@@ -52,8 +42,6 @@ type Msg
     | KeyEventReceived KeyEvent
     | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
-    | GameResultNameReceived String
-    | GameResultsReceived Decode.Value
 
 
 type KeyEvent
@@ -83,9 +71,8 @@ init { intSeed, variantIdentifier } =
       , startedAt = Nothing
       , endedAt = Nothing
       , timeNow = Nothing
-      , gameResults = RemoteData.NotAsked
       }
-    , loadGameResultsForGameVariant variantIdentifier
+    , Cmd.none
     )
 
 
@@ -93,18 +80,7 @@ init { intSeed, variantIdentifier } =
 -- Ports for commands
 
 
-port saveGameResult : Decode.Value -> Cmd msg
-
-
 port emitGameEvents : List String -> Cmd msg
-
-
-port loadGameResults : String -> Cmd msg
-
-
-loadGameResultsForGameVariant : Game.Variant.Identifier -> Cmd msg
-loadGameResultsForGameVariant =
-    Game.Variant.identifierToString >> loadGameResults
 
 
 
@@ -115,12 +91,6 @@ port keyUp : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
 
 
 port keyDown : (( String, Maybe Board.CellIndex ) -> msg) -> Sub msg
-
-
-port receiveGameResultName : (String -> msg) -> Sub msg
-
-
-port receiveGameResults : (Decode.Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
@@ -136,9 +106,7 @@ subscriptions model =
     Sub.batch
         [ keyUp (KeyEventReceived << makeKeyEvent Up)
         , keyDown (KeyEventReceived << makeKeyEvent Down)
-        , receiveGameResultName GameResultNameReceived
         , timerSubscription
-        , receiveGameResults GameResultsReceived
         ]
 
 
@@ -226,25 +194,6 @@ update msg model =
         UpdateTimeNow time ->
             ( { model | timeNow = Just time }, Cmd.none )
 
-        GameResultNameReceived name ->
-            let
-                saveGameResultCmd =
-                    modelToGameResult name model
-                        |> Maybe.map GameResult.encode
-                        |> Maybe.map saveGameResult
-                        |> Maybe.withDefault Cmd.none
-            in
-            ( model, saveGameResultCmd )
-
-        GameResultsReceived rawGameResults ->
-            let
-                gameResults =
-                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
-                        |> Result.map (List.filter (.variant >> (==) model.game.variantIdentifier))
-                        |> RemoteData.fromResult
-            in
-            ( { model | gameResults = gameResults }, Cmd.none )
-
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
 updateTouchNeighbours keyDirection model =
@@ -260,208 +209,19 @@ updateTouchNeighbours keyDirection model =
     ( { model | touchNeighbours = touchNeighbours }, Cmd.none )
 
 
-modelToGameResult : String -> Model -> Maybe GameResult
-modelToGameResult name model =
+modelToGameResult : Model -> Maybe GameResult
+modelToGameResult model =
     Just GameResult
         |> Maybe.Extra.andMap (Game.Variant.toIdentifier model.game.variant)
-        |> Maybe.Extra.andMap (Just name)
+        |> Maybe.Extra.andMap (Just "")
         |> Maybe.Extra.andMap (Just model.intSeed)
         |> Maybe.Extra.andMap model.startedAt
         |> Maybe.Extra.andMap model.endedAt
 
 
-view : Model -> Html Msg
-view model =
-    div []
-        [ gridStyle model.game.variant
-        , div [ class "stack" ]
-            [ div [ id "grid", class "grid" ] <|
-                renderCells model.game
-            , div [ class "cluster bar" ]
-                [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
-                    [ viewStatus model
-                    , viewMonsterSummary (Game.toMonsterSummary model.game)
-                    ]
-                ]
-            , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt model.intSeed ]
-            ]
-        ]
-
-
-gridStyle : Game.Variant.Variant -> Html Msg
-gridStyle variant =
-    let
-        fontSize =
-            if variant.columns > 30 then
-                "1.5vw"
-
-            else
-                "2vw"
-
-        styles =
-            """
-        .grid {
-          font-size: <font-size>;
-          grid-template-rows: repeat(<rows>, <rows>fr);
-          grid-template-columns: repeat(<columns>, <columns>fr);
-          /* Make sure that we render square cells */
-          height: calc((100vw / <columns>) * <rows>);
-        }
-      """
-                |> String.replace "<font-size>" fontSize
-                |> String.replace "<rows>" (String.fromInt variant.rows)
-                |> String.replace "<columns>" (String.fromInt variant.columns)
-    in
-    node "style" [] [ text styles ]
-
-
-viewStatus : Model -> Html Msg
-viewStatus model =
-    let
-        game =
-            model.game
-    in
-    div [ class "cluster" ]
-        [ ul [ class "status" ]
-            [ li [ class "status-item" ]
-                [ text "Lvl"
-                , span [] [ text <| String.fromInt <| Game.getPlayerLevel game ]
-                ]
-            , li [ class "status-item" ]
-                [ text "XP"
-                , span (minSpanWidth "3ch") [ text <| String.fromInt <| Game.getPlayerXp game ]
-                ]
-            , li [ class "status-item" ]
-                [ text "Next"
-                , span (minSpanWidth "3ch")
-                    [ Game.getXpNeededForNextLevel game
-                        |> Maybe.map String.fromInt
-                        |> Maybe.withDefault "0"
-                        |> text
-                    ]
-                ]
-            , li [ class "status-item" ]
-                [ text "HP"
-                , span (minSpanWidth "2ch") [ text <| String.fromInt <| Game.getPlayerHp game ]
-                ]
-            , li [ class "status-item" ]
-                [ text "Time"
-                , viewGameDuration model.startedAt model.endedAt model.timeNow
-                ]
-            ]
-        ]
-
-
-minSpanWidth : String -> List (Html.Attribute msg)
-minSpanWidth s =
-    [ style "display" "inline-block", style "min-width" s ]
-
-
-viewMonsterSummary : Board.MonsterSummary -> Html Msg
-viewMonsterSummary monsterSummary =
-    div [ class "cluster" ]
-        [ ul [ class "monster-summary", style "justify-content" "center" ]
-            (Dict.toList
-                monsterSummary
-                |> List.map
-                    (\( power, count ) ->
-                        li [ class "monster-summary-item" ]
-                            [ text <| "Lvl " ++ String.fromInt power
-                            , span [ class "monster-summary-item-count" ]
-                                [ img [ src (Assets.monsterSrc power), alt "" ] []
-                                , span [ class "monster-summary-item-count-int" ] [ text <| " " ++ String.fromInt count ]
-                                ]
-                            ]
-                    )
-            )
-        ]
-
-
-renderCells : Game.State -> List (Html.Html Msg)
-renderCells game =
-    game
-        |> Game.listCells
-            (\( index, cell ) ->
-                let
-                    content =
-                        Cell.toContent cell
-
-                    contentDescription =
-                        Content.toDescription content
-
-                    displayedValueClass =
-                        "grid-cell--displayed-value-" ++ contentDescription
-                in
-                div
-                    [ classList
-                        [ ( "grid-cell", True )
-                        , ( displayedValueClass, True )
-                        , ( "grid-cell--zero-power", Cell.isRevealed cell && Cell.hasZeroPower cell )
-                        , ( "grid-cell--zero-surrounding-power", Cell.isRevealed cell && Cell.hasZeroSurroundingPower cell )
-                        , ( "grid-cell--monster", Cell.isRevealed cell && Cell.isMonster cell )
-                        , ( "is-revealed", Cell.isRevealed cell )
-                        , ( "is-not-revealed", not <| Cell.isRevealed cell )
-                        , ( "is-touchable", Cell.isTouchable cell )
-                        , ( "is-not-touchable", not <| Cell.isTouchable cell )
-                        ]
-
-                    -- Revealed cells should still be clickable, otherwise we wouldn't be able to
-                    -- toggle between showing power and surrounding power of monster cells.
-                    , onClick (ClickCell index)
-                    , attribute "data-index" (String.fromInt index)
-                    ]
-                    [ contentToHtml content ]
-            )
-
-
-contentToHtml : Content.Content -> Html Msg
-contentToHtml content =
-    case content of
-        Content.Power power ->
-            if power <= 9 then
-                img [ src (Assets.monsterSrc power), alt ("Lvl " ++ String.fromInt power) ] []
-
-            else
-                text <| String.fromInt power
-
-        Content.SurroundingPower surroundingPower ->
-            text <| String.fromInt surroundingPower
-
-        Content.Bet bet ->
-            text <| String.fromInt bet
-
-        Content.Nothing ->
-            text ""
-
-
-viewGameDuration : Maybe Time.Posix -> Maybe Time.Posix -> Maybe Time.Posix -> Html Msg
-viewGameDuration maybeStartedAt maybeEndedAt maybeTimeNow =
-    let
-        formatNumber =
-            String.fromInt >> String.padLeft 2 '0'
-
-        calculateDuration from to =
-            let
-                secondsSinceStart =
-                    (Time.posixToMillis to - Time.posixToMillis from) // 1000
-            in
-            ( secondsSinceStart // 60, remainderBy 60 secondsSinceStart )
-
-        ( minutes, seconds ) =
-            case ( maybeStartedAt, maybeEndedAt, maybeTimeNow ) of
-                ( Just startedAt, Just endedAt, _ ) ->
-                    calculateDuration startedAt endedAt
-
-                ( Just startedAt, Nothing, Just timeNow ) ->
-                    calculateDuration startedAt timeNow
-
-                _ ->
-                    ( 0, 0 )
-    in
-    span []
-        [ text <| formatNumber minutes
-        , small [] [ text <| formatNumber seconds ]
-        ]
+modelToGameStatus : Model -> Game.Status
+modelToGameStatus =
+    .game >> .status
 
 
 keyCodeToDirection : String -> Maybe Direction
@@ -487,3 +247,27 @@ keyCodeToDirection string =
 
         _ ->
             Nothing
+
+
+view : Model -> Html Msg
+view model =
+    let
+        duration =
+            case ( model.startedAt, model.endedAt, model.timeNow ) of
+                ( Just startedAt, Just endedAt, _ ) ->
+                    { startedAt = startedAt, endedAt = endedAt }
+
+                ( Just startedAt, Nothing, Just timeNow ) ->
+                    { startedAt = startedAt, endedAt = timeNow }
+
+                _ ->
+                    { startedAt = Time.millisToPosix 0, endedAt = Time.millisToPosix 0 }
+    in
+    Game.View.view
+        { variant = model.game.variant
+        , viewOverlay = Nothing
+        , onCellClickMsg = Just ClickCell
+        , intSeed = model.intSeed
+        , duration = duration
+        }
+        model.game
