@@ -1,13 +1,16 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Browser
 import Game
 import Game.Direction exposing (Direction(..))
+import Game.GameResult as GameResult
 import Game.Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode as Decode
 import Random
+import RemoteData exposing (RemoteData)
 import Scene.ChooseVariant
 import Scene.Game
 import Scene.GameWon
@@ -31,6 +34,7 @@ type alias Flags =
 type alias Model =
     { scene : Scene
     , seed : Random.Seed
+    , gameResults : GameResult.RemoteGameResults
     }
 
 
@@ -44,28 +48,44 @@ type Msg
     = InitializeGame Game.Variant.Identifier
     | GameSceneMsg Scene.Game.Msg
     | GameWonSceneMsg Scene.GameWon.Msg
+    | GameResultsReceived Decode.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { scene = ChooseVariant
       , seed = Random.initialSeed flags.randomNumber
+      , gameResults = RemoteData.NotAsked
       }
     , Cmd.none
     )
 
 
+
+-- Ports for subscriptions
+
+
+port receiveGameResults : (Decode.Value -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model.scene of
-        ChooseVariant ->
-            Sub.none
+    let
+        sceneSubs =
+            case model.scene of
+                ChooseVariant ->
+                    Sub.none
 
-        Game sceneModel ->
-            Sub.map GameSceneMsg (Scene.Game.subscriptions sceneModel)
+                Game sceneModel ->
+                    Sub.map GameSceneMsg (Scene.Game.subscriptions sceneModel)
 
-        GameWon sceneModel ->
-            Sub.map GameWonSceneMsg (Scene.GameWon.subscriptions sceneModel)
+                GameWon sceneModel ->
+                    Sub.map GameWonSceneMsg (Scene.GameWon.subscriptions sceneModel)
+    in
+    Sub.batch
+        [ sceneSubs
+        , receiveGameResults GameResultsReceived
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -75,6 +95,24 @@ update msg model =
             ( model, Cmd.none )
     in
     case ( model.scene, msg ) of
+        ( _, GameResultsReceived rawGameResults ) ->
+            let
+                gameResults =
+                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
+                        |> RemoteData.fromResult
+
+                ( newSceneModel, sceneCmds ) =
+                    case model.scene of
+                        GameWon sceneModel ->
+                            Scene.GameWon.update (Scene.GameWon.GameResultsReceived gameResults) sceneModel
+                                |> Tuple.mapFirst GameWon
+                                |> Tuple.mapSecond (Cmd.map GameWonSceneMsg)
+
+                        _ ->
+                            ( model.scene, Cmd.none )
+            in
+            ( { model | gameResults = gameResults, scene = newSceneModel }, sceneCmds )
+
         ( ChooseVariant, InitializeGame variantIdentifier ) ->
             let
                 ( intSeed, nextSeed ) =
@@ -83,8 +121,9 @@ update msg model =
                 ( sceneModel, sceneCmd ) =
                     Scene.Game.init { intSeed = intSeed, variantIdentifier = variantIdentifier }
             in
-            ( { scene = Game sceneModel
-              , seed = nextSeed
+            ( { model
+                | scene = Game sceneModel
+                , seed = nextSeed
               }
             , Cmd.map GameSceneMsg sceneCmd
             )
@@ -154,4 +193,4 @@ view model =
             Html.map GameSceneMsg <| Scene.Game.view sceneModel
 
         GameWon sceneModel ->
-            Html.map GameWonSceneMsg <| Scene.GameWon.view sceneModel
+            Html.map GameWonSceneMsg <| Scene.GameWon.view model.gameResults sceneModel
