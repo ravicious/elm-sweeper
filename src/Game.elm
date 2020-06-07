@@ -2,6 +2,7 @@ module Game exposing
     ( Action(..)
     , State
     , Status(..)
+    , empty
     , getPlayerHp
     , getPlayerLevel
     , getPlayerXp
@@ -57,6 +58,20 @@ init identifier seed =
             Variant.get identifier
     in
     { board = Board.init variant seed
+    , player = Player.init variant.initialPlayerHp
+    , variant = variant
+    , variantIdentifier = identifier
+    , status = InProgress
+    }
+
+
+empty : Variant.Identifier -> State
+empty identifier =
+    let
+        variant =
+            Variant.get identifier
+    in
+    { board = Board.empty variant
     , player = Player.init variant.initialPlayerHp
     , variant = variant
     , variantIdentifier = identifier

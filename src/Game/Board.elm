@@ -3,6 +3,7 @@ module Game.Board exposing
     , MonsterSummary
     , State
     , changeBet
+    , empty
     , getNeighborIndexes
     , indexToCell
     , indexToPoint
@@ -71,6 +72,14 @@ init variant seed =
         |> calculateSurroundingPowerOfCells
 
 
+empty : Variant -> State
+empty variant =
+    { rows = variant.rows
+    , columns = variant.columns
+    , cells = initEmptyCells variant
+    }
+
+
 {-| Generates a board with given dimension with all zero-power cells. Useful in testing.
 -}
 initWithZeroPower : Int -> Int -> Maybe State
@@ -110,6 +119,18 @@ initCells variant seed =
             Random.List.shuffle cells |> (\a -> Random.step a seed)
     in
     listOfCellsToDictOfCells shuffledCells
+
+
+initEmptyCells : Variant -> Cells
+initEmptyCells variant =
+    let
+        totalNumberOfCells =
+            variant.rows * variant.columns
+
+        zeroCells =
+            List.repeat totalNumberOfCells (Cell.init 0)
+    in
+    listOfCellsToDictOfCells zeroCells
 
 
 listOfCellsToDictOfCells : List Cell.Cell -> Cells

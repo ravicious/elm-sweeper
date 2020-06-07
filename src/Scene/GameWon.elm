@@ -1,4 +1,11 @@
-port module Scene.GameWon exposing (Model, Msg(..), init, subscriptions, update, view)
+port module Scene.GameWon exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , update
+    , view
+    )
 
 import Browser.Dom
 import Game
@@ -11,7 +18,7 @@ import Html.Events exposing (..)
 import Html.Keyed
 import HtmlHelpers exposing (..)
 import Json.Decode as Decode
-import RemoteData exposing (RemoteData)
+import RemoteData
 import Task
 import Time
 
@@ -20,16 +27,11 @@ type alias Model =
     { game : Game.State
     , gameResult : GameResult
     , name : Maybe String
-    , gameResults : GameResults
     }
 
 
-type alias GameResults =
-    RemoteData Decode.Error (List GameResult)
-
-
 type Msg
-    = GameResultsReceived Decode.Value
+    = GameResultsReceived GameResult.RemoteGameResults
     | UpdateName String
     | PlayAgain
     | NoOp
@@ -46,7 +48,6 @@ init game gameResult =
     ( { game = game
       , gameResult = gameResult
       , name = Nothing
-      , gameResults = RemoteData.NotAsked
       }
     , saveGameResultCmd
     )
@@ -66,24 +67,16 @@ port updateNameInGameResult : ( Decode.Value, String ) -> Cmd msg
 -- Ports for subscriptions
 
 
-port receiveGameResults : (Decode.Value -> msg) -> Sub msg
-
-
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    receiveGameResults GameResultsReceived
+    Sub.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GameResultsReceived rawGameResults ->
+        GameResultsReceived gameResults ->
             let
-                gameResults =
-                    Decode.decodeValue (Decode.list GameResult.decoder) rawGameResults
-                        |> Result.map (List.filter (.variant >> (==) model.gameResult.variant))
-                        |> RemoteData.fromResult
-
                 scrollToInputCmd =
                     if RemoteData.isSuccess gameResults then
                         Task.attempt (always NoOp) (Browser.Dom.focus resultNameInputId)
@@ -91,7 +84,7 @@ update msg model =
                     else
                         Cmd.none
             in
-            ( { model | gameResults = gameResults }, scrollToInputCmd )
+            ( model, scrollToInputCmd )
 
         UpdateName newName ->
             ( { model | gameResult = GameResult.updateName newName model.gameResult }
@@ -106,29 +99,33 @@ update msg model =
             ( model, Cmd.none )
 
 
-view : Model -> Html Msg
-view model =
+view : GameResult.RemoteGameResults -> Model -> Html Msg
+view gameResults model =
     Game.View.view
         { variant = Game.Variant.get model.gameResult.variant
-        , viewOverlay = Just ( "game-won", viewOverlay model )
+        , viewOverlay = Just ( "game-won", viewOverlay gameResults model )
         , onCellClickMsg = Nothing
-        , intSeed = model.gameResult.seed
-        , duration = model.gameResult
+        , statusBarOptions =
+            Just
+                { intSeed = model.gameResult.seed
+                , duration = model.gameResult
+                }
         }
         model.game
 
 
-viewOverlay : Model -> List (Html Msg)
-viewOverlay model =
+viewOverlay : GameResult.RemoteGameResults -> Model -> List (Html Msg)
+viewOverlay gameResults model =
     let
-        gameResults =
-            model.gameResults
+        viewGameResults =
+            gameResults
+                |> RemoteData.map (List.filter (.variant >> (==) model.gameResult.variant))
                 |> RemoteData.unwrap (text "") (viewResults model.gameResult)
     in
     [ div [ class "cover whole-parent" ]
-        [ h1 [] [ text "You did it! Game won!" ]
+        [ h1 [ class "center grid-overlay__text" ] [ text "You did it! Game won!" ]
         , div [ class "centered center", style "overflow-y" "scroll", style "width" "100%" ]
-            [ gameResults ]
+            [ viewGameResults ]
         , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ] [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ] ]
         ]
     ]
@@ -136,7 +133,7 @@ viewOverlay model =
 
 viewResults : GameResult -> List GameResult -> Html Msg
 viewResults currentGameResult gameResults =
-    Html.Keyed.ul [ class "results" ] <| List.map (viewResult currentGameResult) <| GameResult.toLeaderboard gameResults
+    Html.Keyed.ul [ class "results grid-overlay__text" ] <| List.map (viewResult currentGameResult) <| GameResult.toLeaderboard gameResults
 
 
 resultNameInputId : String

@@ -9,8 +9,8 @@ import Json.Decode as Decode
 import Maybe.Extra
 
 
-view : (Game.Variant.Identifier -> msg) -> Html msg
-view initializeGameMsg =
+view : { initializeGameMsg : Game.Variant.Identifier -> msg, viewHighScoresMsg : msg } -> Html msg
+view options =
     let
         variantIdentifierFromFormDecoder =
             Decode.at [ "currentTarget", "variantIdentifier", "value" ] Decode.string
@@ -19,7 +19,7 @@ view initializeGameMsg =
                     (\( originalString, maybeIdentifier ) ->
                         Maybe.Extra.unwrap
                             (Decode.fail ("Unknown variant identifier " ++ originalString))
-                            (Decode.succeed << initializeGameMsg)
+                            (Decode.succeed << options.initializeGameMsg)
                             maybeIdentifier
                     )
                 |> Decode.map (\a -> ( a, True ))
@@ -36,6 +36,14 @@ view initializeGameMsg =
                     , viewVariants
                     , [ div [] [ button [ type_ "submit" ] [ text "Start game" ] ]
                       ]
+                    , [ div []
+                            [ button
+                                [ type_ "button"
+                                , onClick options.viewHighScoresMsg
+                                ]
+                                [ text "High scores" ]
+                            ]
+                      ]
                     ]
                 )
             ]
@@ -44,15 +52,11 @@ view initializeGameMsg =
 
 viewVariants : List (Html msg)
 viewVariants =
-    let
-        variants =
-            [ ( Game.Variant.Normal, "Normal" ), ( Game.Variant.Huge, "Huge" ) ]
-    in
     List.map
-        (\( variantIdentifier, labelText ) ->
+        (\( variantIdentifier, variant ) ->
             let
-                variant =
-                    Game.Variant.get variantIdentifier
+                labelText =
+                    Game.Variant.identifierToString variantIdentifier
             in
             label [ class "cluster smaller" ]
                 [ div []
@@ -68,4 +72,4 @@ viewVariants =
                     ]
                 ]
         )
-        variants
+        Game.Variant.playableVariants

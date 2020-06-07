@@ -1,6 +1,7 @@
 module Game.GameResult exposing
     ( GameResult
     , Placing(..)
+    , RemoteGameResults
     , compare
     , decoder
     , encode
@@ -14,6 +15,7 @@ import Game.Variant
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List.Extra
+import RemoteData exposing (RemoteData)
 import Time
 
 
@@ -24,6 +26,10 @@ type alias GameResult =
     , startedAt : Time.Posix
     , endedAt : Time.Posix
     }
+
+
+type alias RemoteGameResults =
+    RemoteData Decode.Error (List GameResult)
 
 
 type Placing
