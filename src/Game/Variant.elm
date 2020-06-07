@@ -4,6 +4,7 @@ module Game.Variant exposing
     , get
     , identifierDecoder
     , identifierToString
+    , playableVariants
     , stringToIdentifier
     , toIdentifier
     )
@@ -44,14 +45,25 @@ get identifier =
             tiny
 
 
-variants : List ( Identifier, Variant )
-variants =
+allVariants : List ( Identifier, Variant )
+allVariants =
     [ ( Normal, normal ), ( Huge, huge ), ( Tiny, tiny ) ]
+
+
+playableVariants : List ( Identifier, Variant )
+playableVariants =
+    let
+        filteredOutVariants =
+            []
+
+        -- [ Tiny ]
+    in
+    List.filter (Tuple.first >> (\a -> List.member a filteredOutVariants) >> not) allVariants
 
 
 toIdentifier : Variant -> Maybe Identifier
 toIdentifier variant =
-    List.Extra.find (Tuple.second >> (==) variant) variants
+    List.Extra.find (Tuple.second >> (==) variant) allVariants
         |> Maybe.map Tuple.first
 
 

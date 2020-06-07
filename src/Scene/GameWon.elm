@@ -18,7 +18,7 @@ import Html.Events exposing (..)
 import Html.Keyed
 import HtmlHelpers exposing (..)
 import Json.Decode as Decode
-import RemoteData exposing (RemoteData)
+import RemoteData
 import Task
 import Time
 
@@ -105,8 +105,11 @@ view gameResults model =
         { variant = Game.Variant.get model.gameResult.variant
         , viewOverlay = Just ( "game-won", viewOverlay gameResults model )
         , onCellClickMsg = Nothing
-        , intSeed = model.gameResult.seed
-        , duration = model.gameResult
+        , statusBarOptions =
+            Just
+                { intSeed = model.gameResult.seed
+                , duration = model.gameResult
+                }
         }
         model.game
 
@@ -120,7 +123,7 @@ viewOverlay gameResults model =
                 |> RemoteData.unwrap (text "") (viewResults model.gameResult)
     in
     [ div [ class "cover whole-parent" ]
-        [ h1 [] [ text "You did it! Game won!" ]
+        [ h1 [ class "center grid-overlay__text" ] [ text "You did it! Game won!" ]
         , div [ class "centered center", style "overflow-y" "scroll", style "width" "100%" ]
             [ viewGameResults ]
         , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ] [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ] ]
@@ -130,7 +133,7 @@ viewOverlay gameResults model =
 
 viewResults : GameResult -> List GameResult -> Html Msg
 viewResults currentGameResult gameResults =
-    Html.Keyed.ul [ class "results" ] <| List.map (viewResult currentGameResult) <| GameResult.toLeaderboard gameResults
+    Html.Keyed.ul [ class "results grid-overlay__text" ] <| List.map (viewResult currentGameResult) <| GameResult.toLeaderboard gameResults
 
 
 resultNameInputId : String

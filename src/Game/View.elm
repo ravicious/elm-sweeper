@@ -10,6 +10,7 @@ import Game.Variant as Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Maybe.Extra
 import Time
 
 
@@ -17,7 +18,12 @@ type alias Options msg a =
     { variant : Variant.Variant
     , viewOverlay : Maybe ( String, List (Html msg) )
     , onCellClickMsg : Maybe (Int -> msg)
-    , intSeed : Int
+    , statusBarOptions : Maybe (StatusBarOptions a)
+    }
+
+
+type alias StatusBarOptions a =
+    { intSeed : Int
     , duration :
         { a
             | startedAt : Time.Posix
@@ -31,24 +37,22 @@ view options game =
     div []
         [ viewGridStyle options.variant
         , div [ class "stack" ]
-            [ div [ class "grid-container" ]
-                [ case options.viewOverlay of
-                    Just ( className, viewOverlay ) ->
-                        div [ class <| "grid-overlay " ++ className ] viewOverlay
+            (List.concat
+                [ [ div [ class "grid-container" ]
+                        [ case options.viewOverlay of
+                            Just ( className, viewOverlay ) ->
+                                div [ class <| "grid-overlay " ++ className ] viewOverlay
 
-                    Nothing ->
-                        text ""
-                , div [ id "grid", class "grid" ] <|
-                    viewCells { onClickMsg = options.onCellClickMsg } game
+                            Nothing ->
+                                text ""
+                        , div [ id "grid", class "grid" ] <|
+                            viewCells { onClickMsg = options.onCellClickMsg } game
+                        ]
+                  ]
+                , options.statusBarOptions
+                    |> Maybe.Extra.unwrap [] (viewStatusBar game)
                 ]
-            , div [ class "cluster bar" ]
-                [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
-                    [ viewStatus options.duration game
-                    , viewMonsterSummary (Game.toMonsterSummary game)
-                    ]
-                ]
-            , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt options.intSeed ]
-            ]
+            )
         ]
 
 
@@ -131,6 +135,18 @@ viewContent content =
 
         Content.Nothing ->
             text ""
+
+
+viewStatusBar : Game.State -> StatusBarOptions a -> List (Html msg)
+viewStatusBar game options =
+    [ div [ class "cluster bar" ]
+        [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
+            [ viewStatus options.duration game
+            , viewMonsterSummary (Game.toMonsterSummary game)
+            ]
+        ]
+    , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt options.intSeed ]
+    ]
 
 
 viewStatus : { a | startedAt : Time.Posix, endedAt : Time.Posix } -> Game.State -> Html msg

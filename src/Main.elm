@@ -10,10 +10,11 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as Decode
 import Random
-import RemoteData exposing (RemoteData)
+import RemoteData
 import Scene.ChooseVariant
 import Scene.Game
 import Scene.GameWon
+import Scene.HighScores
 
 
 main : Program Flags Model Msg
@@ -28,6 +29,7 @@ main =
 
 type alias Flags =
     { randomNumber : Int
+    , rawGameResults : Decode.Value
     }
 
 
@@ -42,6 +44,7 @@ type Scene
     = ChooseVariant
     | Game Scene.Game.Model
     | GameWon Scene.GameWon.Model
+    | HighScores Scene.HighScores.Model
 
 
 type Msg
@@ -49,13 +52,20 @@ type Msg
     | GameSceneMsg Scene.Game.Msg
     | GameWonSceneMsg Scene.GameWon.Msg
     | GameResultsReceived Decode.Value
+    | HighScoresSceneMsg Scene.HighScores.Msg
+    | ViewHighScores
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
+    let
+        gameResults =
+            Decode.decodeValue (Decode.list GameResult.decoder) flags.rawGameResults
+                |> RemoteData.fromResult
+    in
     ( { scene = ChooseVariant
       , seed = Random.initialSeed flags.randomNumber
-      , gameResults = RemoteData.NotAsked
+      , gameResults = gameResults
       }
     , Cmd.none
     )
@@ -73,14 +83,14 @@ subscriptions model =
     let
         sceneSubs =
             case model.scene of
-                ChooseVariant ->
-                    Sub.none
-
                 Game sceneModel ->
                     Sub.map GameSceneMsg (Scene.Game.subscriptions sceneModel)
 
                 GameWon sceneModel ->
                     Sub.map GameWonSceneMsg (Scene.GameWon.subscriptions sceneModel)
+
+                _ ->
+                    Sub.none
     in
     Sub.batch
         [ sceneSubs
@@ -102,6 +112,8 @@ update msg model =
                         |> RemoteData.fromResult
 
                 ( newSceneModel, sceneCmds ) =
+                    -- For certain scenes, we need to fire some commands after the results get
+                    -- loaded.
                     case model.scene of
                         GameWon sceneModel ->
                             Scene.GameWon.update (Scene.GameWon.GameResultsReceived gameResults) sceneModel
@@ -127,6 +139,9 @@ update msg model =
               }
             , Cmd.map GameSceneMsg sceneCmd
             )
+
+        ( ChooseVariant, ViewHighScores ) ->
+            ( { model | scene = HighScores Game.Variant.Tiny }, Cmd.none )
 
         ( ChooseVariant, _ ) ->
             noop
@@ -177,6 +192,21 @@ update msg model =
         ( GameWon _, _ ) ->
             noop
 
+        ( HighScores _, HighScoresSceneMsg Scene.HighScores.GoBack ) ->
+            ( { model | scene = ChooseVariant }, Cmd.none )
+
+        ( HighScores sceneModel, HighScoresSceneMsg sceneMsg ) ->
+            let
+                ( newSceneModel, sceneCmds ) =
+                    Scene.HighScores.update sceneMsg sceneModel
+                        |> Tuple.mapFirst HighScores
+                        |> Tuple.mapSecond (Cmd.map HighScoresSceneMsg)
+            in
+            ( { model | scene = newSceneModel }, sceneCmds )
+
+        ( HighScores _, _ ) ->
+            noop
+
 
 intSeedGenerator : Random.Generator Int
 intSeedGenerator =
@@ -187,10 +217,16 @@ view : Model -> Html Msg
 view model =
     case model.scene of
         ChooseVariant ->
-            Scene.ChooseVariant.view InitializeGame
+            Scene.ChooseVariant.view
+                { initializeGameMsg = InitializeGame
+                , viewHighScoresMsg = ViewHighScores
+                }
 
         Game sceneModel ->
             Html.map GameSceneMsg <| Scene.Game.view sceneModel
 
         GameWon sceneModel ->
             Html.map GameWonSceneMsg <| Scene.GameWon.view model.gameResults sceneModel
+
+        HighScores sceneModel ->
+            Html.map HighScoresSceneMsg <| Scene.HighScores.view model.gameResults sceneModel

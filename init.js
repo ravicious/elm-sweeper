@@ -1,15 +1,17 @@
 'use strict';
 
+var resultsKey = 'results'
 var node = document.getElementById('app-container')
 var randomNumber = Math.floor(Math.random()*0xFFFFFFFF)
+var results = JSON.parse(localStorage.getItem(resultsKey)) || []
 var app = Elm.Main.init({
   node: node,
   flags: {
     randomNumber: randomNumber,
+    rawGameResults: results,
   },
 })
 
-var resultsKey = 'results'
 app.ports.saveGameResult.subscribe(function(gameResult) {
   var results = JSON.parse(localStorage.getItem(resultsKey)) || []
 

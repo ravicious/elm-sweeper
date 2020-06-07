@@ -267,7 +267,10 @@ view model =
         { variant = model.game.variant
         , viewOverlay = Nothing
         , onCellClickMsg = Just ClickCell
-        , intSeed = model.intSeed
-        , duration = duration
+        , statusBarOptions =
+            Just
+                { intSeed = model.intSeed
+                , duration = duration
+                }
         }
         model.game
