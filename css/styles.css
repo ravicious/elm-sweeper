@@ -203,15 +203,17 @@ body {
 
 /* Effects */
 
-body.shaking {
-  overflow: hidden;
-}
+@media (prefers-reduced-motion: no-preference) {
+  body.shaking {
+    overflow: hidden;
+  }
 
-body.shaking .grid {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
+  body.shaking .grid {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
 }
 
 @keyframes shake {
