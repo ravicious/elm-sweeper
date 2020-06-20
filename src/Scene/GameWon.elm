@@ -126,7 +126,9 @@ viewOverlay gameResults model =
         [ h1 [ class "center grid-overlay__text" ] [ text "You did it! Game won!" ]
         , div [ class "centered center", style "overflow-y" "scroll", style "width" "100%" ]
             [ viewGameResults ]
-        , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ] [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ] ]
+        , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ]
+            [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ]
+            ]
         ]
     ]
 
