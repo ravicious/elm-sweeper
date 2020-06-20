@@ -182,7 +182,9 @@ body {
   list-style: none;
 
   display: grid;
-  grid-template-columns: 5ch auto 4ch;
+  /* minmax handles a case where the parent's width doesn't allow us to reach 21ch, like in the High
+   * Scores scene. */
+  grid-template-columns: 5ch minmax(auto, 21ch) 4ch;
   column-gap: var(--s-2);
 
   word-break: break-word;
