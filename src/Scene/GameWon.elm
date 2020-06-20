@@ -144,6 +144,9 @@ resultNameInputId =
 viewResult : GameResult -> ( Placing, GameResult ) -> ( String, Html Msg )
 viewResult currentGameResult ( placing, gameResult ) =
     let
+        isCurrentGameResult =
+            gameResult == currentGameResult
+
         placeText =
             case placing of
                 Place place ->
@@ -158,13 +161,13 @@ viewResult currentGameResult ( placing, gameResult ) =
                 |> Decode.map (\a -> ( a, True ))
     in
     ( String.fromInt <| Time.posixToMillis gameResult.startedAt
-    , li []
+    , li [ classList [ ( "result--current", isCurrentGameResult ) ] ]
         [ span [ class "result__place" ]
             [ text placeText
             , text "."
             ]
-        , span []
-            [ if gameResult == currentGameResult && String.isEmpty gameResult.name then
+        , span [ class "result__name" ]
+            [ if isCurrentGameResult && String.isEmpty gameResult.name then
                 Html.form
                     [ preventDefaultOn "submit" nameFromFormDecoder
                     ]

@@ -124,7 +124,7 @@ viewResult ( placing, gameResult ) =
             [ text placeText
             , text "."
             ]
-        , span [] [ text gameResult.name ]
+        , span [ class "result__name" ] [ text gameResult.name ]
         , span [] [ Game.View.viewGameDuration gameResult.startedAt gameResult.endedAt ]
         ]
     )
