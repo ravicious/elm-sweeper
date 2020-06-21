@@ -126,7 +126,9 @@ viewOverlay gameResults model =
         [ h1 [ class "center grid-overlay__text" ] [ text "You did it! Game won!" ]
         , div [ class "centered center", style "overflow-y" "scroll", style "width" "100%" ]
             [ viewGameResults ]
-        , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ] [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ] ]
+        , div [ class "center", hideIf (String.isEmpty model.gameResult.name) ]
+            [ button [ onClick PlayAgain, type_ "button" ] [ text "Play again" ]
+            ]
         ]
     ]
 
@@ -144,6 +146,9 @@ resultNameInputId =
 viewResult : GameResult -> ( Placing, GameResult ) -> ( String, Html Msg )
 viewResult currentGameResult ( placing, gameResult ) =
     let
+        isCurrentGameResult =
+            gameResult == currentGameResult
+
         placeText =
             case placing of
                 Place place ->
@@ -158,13 +163,13 @@ viewResult currentGameResult ( placing, gameResult ) =
                 |> Decode.map (\a -> ( a, True ))
     in
     ( String.fromInt <| Time.posixToMillis gameResult.startedAt
-    , li []
+    , li [ classList [ ( "result--current", isCurrentGameResult ) ] ]
         [ span [ class "result__place" ]
             [ text placeText
             , text "."
             ]
-        , span []
-            [ if gameResult == currentGameResult && String.isEmpty gameResult.name then
+        , span [ class "result__name" ]
+            [ if isCurrentGameResult && String.isEmpty gameResult.name then
                 Html.form
                     [ preventDefaultOn "submit" nameFromFormDecoder
                     ]

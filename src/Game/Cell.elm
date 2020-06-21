@@ -1,5 +1,6 @@
 module Game.Cell exposing
     ( Cell
+    , RevealedBy(..)
     , changeBet
     , getPower
     , getXpReward
@@ -11,6 +12,7 @@ module Game.Cell exposing
     , isRevealed
     , isTouchable
     , reveal
+    , revealedBy
     , setSurroundingPowerFromNeighbors
     , toContent
     , touch
@@ -43,10 +45,9 @@ type alias Bet =
     Maybe Int
 
 
-type MonsterCellDisplayedValue
-    = Power
-    | SurroundingPower
-    | None
+type RevealedBy
+    = RevealedByPlayer
+    | RevealedByGameOver
 
 
 type alias CommonState =
@@ -62,8 +63,18 @@ type alias ZeroPowerCellState =
 
 type alias MonsterCellState =
     { power : Power
-    , displayedValue : MonsterCellDisplayedValue
+    , visibility : MonsterCellVisibility
     }
+
+
+type MonsterCellVisibility
+    = Hidden
+    | Revealed RevealedBy MonsterCellDisplayedValue
+
+
+type MonsterCellDisplayedValue
+    = Power
+    | SurroundingPower
 
 
 type SpecificState
@@ -92,7 +103,7 @@ init power =
             else
                 MonsterCell
                     { power = Tagged.tag power
-                    , displayedValue = None
+                    , visibility = Hidden
                     }
     in
     Cell commonState specificState
@@ -127,29 +138,39 @@ touch (Cell commonState specificState) =
 
             MonsterCell state ->
                 let
-                    nextDisplayedValue =
-                        case state.displayedValue of
-                            None ->
-                                Power
+                    nextVisibility =
+                        case state.visibility of
+                            Hidden ->
+                                Revealed RevealedByPlayer Power
 
-                            Power ->
-                                SurroundingPower
+                            Revealed wasRevealedBy Power ->
+                                Revealed wasRevealedBy SurroundingPower
 
-                            SurroundingPower ->
-                                Power
+                            Revealed wasRevealedBy SurroundingPower ->
+                                Revealed wasRevealedBy Power
                 in
-                MonsterCell { state | displayedValue = nextDisplayedValue }
+                MonsterCell { state | visibility = nextVisibility }
 
 
-reveal : Cell -> Cell
-reveal (Cell commonState specificState) =
-    Cell commonState <|
-        case specificState of
-            ZeroPowerCell state ->
-                ZeroPowerCell { state | isRevealed = True }
+reveal : RevealedBy -> Cell -> Cell
+reveal wasRevealedBy (Cell commonState specificState) =
+    let
+        cell =
+            Cell commonState specificState
+    in
+    if isRevealed cell then
+        -- For already revealed cells, we need to not reveal them again so that we don't overwrite
+        -- their revealedBy value.
+        cell
 
-            MonsterCell state ->
-                MonsterCell { state | displayedValue = Power }
+    else
+        Cell commonState <|
+            case specificState of
+                ZeroPowerCell state ->
+                    ZeroPowerCell { state | isRevealed = True }
+
+                MonsterCell state ->
+                    MonsterCell { state | visibility = Revealed wasRevealedBy Power }
 
 
 changeBet : ( Int, Int ) -> Direction -> Cell -> Cell
@@ -216,15 +237,31 @@ isRevealed (Cell _ specificState) =
             state.isRevealed
 
         MonsterCell state ->
-            case state.displayedValue of
-                None ->
+            case state.visibility of
+                Hidden ->
                     False
 
-                Power ->
+                Revealed _ _ ->
                     True
 
-                SurroundingPower ->
-                    True
+
+revealedBy : Cell -> Maybe RevealedBy
+revealedBy (Cell _ specificState) =
+    case specificState of
+        ZeroPowerCell state ->
+            if state.isRevealed then
+                Just RevealedByPlayer
+
+            else
+                Nothing
+
+        MonsterCell state ->
+            case state.visibility of
+                Hidden ->
+                    Nothing
+
+                Revealed wasRevealedBy _ ->
+                    Just wasRevealedBy
 
 
 isHidden : Cell -> Bool
@@ -287,12 +324,12 @@ toContent (Cell commonState specificState) =
                 betToContent commonState.bet
 
         MonsterCell state ->
-            case state.displayedValue of
-                None ->
+            case state.visibility of
+                Hidden ->
                     betToContent commonState.bet
 
-                Power ->
+                Revealed _ Power ->
                     Content.Power <| Tagged.untag state.power
 
-                SurroundingPower ->
+                Revealed _ SurroundingPower ->
                     Content.SurroundingPower <| Tagged.untag commonState.surroundingPower

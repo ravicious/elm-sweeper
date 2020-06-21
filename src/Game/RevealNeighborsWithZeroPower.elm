@@ -129,4 +129,4 @@ run index boardState =
                 |> scan boardState
     in
     Set.toList scanState.toReveal
-        |> List.foldl Board.revealCell boardState
+        |> List.foldl (Board.revealCell Cell.RevealedByPlayer) boardState

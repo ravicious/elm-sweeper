@@ -289,9 +289,9 @@ touchCell =
                 cell
 
 
-revealCell : CellIndex -> State -> State
-revealCell =
-    updateCell Cell.reveal
+revealCell : Cell.RevealedBy -> CellIndex -> State -> State
+revealCell revealedBy =
+    updateCell (Cell.reveal revealedBy)
 
 
 changeBet : ( Int, Int ) -> Direction -> CellIndex -> State -> State
@@ -299,9 +299,9 @@ changeBet betThresholds direction =
     updateCell <| \cell -> Cell.changeBet betThresholds direction cell
 
 
-revealAllCells : State -> State
-revealAllCells state =
-    { state | cells = Dict.map (\_ cell -> Cell.reveal cell) state.cells }
+revealAllCells : Cell.RevealedBy -> State -> State
+revealAllCells revealedBy state =
+    { state | cells = Dict.map (\_ cell -> Cell.reveal revealedBy cell) state.cells }
 
 
 
@@ -320,15 +320,23 @@ toMonsterSummary { cells } =
                     monsterSummaryWithPowerIntInitialized =
                         Dict.update powerInt (\i -> Maybe.Extra.or i (Just 0)) monsterSummary
                 in
-                -- If there's a monster cell still hidden, that's going to count towards the number
-                -- of those cells left.
+                -- If there's a monster cell still hidden or was revealed by a game over event,
+                -- that's going to count towards the number of monster cells left.
                 -- Otherwise we want to show 0, hence why we ensure the given power int is
                 -- initialized in monsterSummary.
-                if Cell.isHidden cell then
-                    Dict.update powerInt (Maybe.map ((+) 1)) monsterSummaryWithPowerIntInitialized
+                --
+                -- The idea is that in case of a game over, we reveal all cells, but in the monster
+                -- summary we want to show only those who were yet to be revealed by the player.
+                -- Otherwise the monster summary would be all zeros on game over.
+                case Cell.revealedBy cell of
+                    Nothing ->
+                        Dict.update powerInt (Maybe.map ((+) 1)) monsterSummaryWithPowerIntInitialized
 
-                else
-                    monsterSummaryWithPowerIntInitialized
+                    Just Cell.RevealedByGameOver ->
+                        Dict.update powerInt (Maybe.map ((+) 1)) monsterSummaryWithPowerIntInitialized
+
+                    Just Cell.RevealedByPlayer ->
+                        monsterSummaryWithPowerIntInitialized
 
             else
                 monsterSummary

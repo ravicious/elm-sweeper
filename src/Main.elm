@@ -13,6 +13,7 @@ import Random
 import RemoteData
 import Scene.ChooseVariant
 import Scene.Game
+import Scene.GameOver
 import Scene.GameWon
 import Scene.HighScores
 
@@ -44,6 +45,7 @@ type Scene
     = ChooseVariant
     | Game Scene.Game.Model
     | GameWon Scene.GameWon.Model
+    | GameOver Scene.GameOver.Model
     | HighScores Scene.HighScores.Model
 
 
@@ -54,6 +56,7 @@ type Msg
     | GameResultsReceived Decode.Value
     | HighScoresSceneMsg Scene.HighScores.Msg
     | ViewHighScores
+    | OpenChooseVariantScene
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -171,7 +174,25 @@ update msg model =
                         Nothing ->
                             ( { model | scene = Game newGameSceneModel }, gameSceneCmds )
 
-                _ ->
+                Game.Lost ->
+                    case ( newGameSceneModel.startedAt, newGameSceneModel.endedAt ) of
+                        ( Just startedAt, Just endedAt ) ->
+                            ( { model
+                                | scene =
+                                    GameOver
+                                        { game = newGameSceneModel.game
+                                        , intSeed = newGameSceneModel.intSeed
+                                        , startedAt = startedAt
+                                        , endedAt = endedAt
+                                        }
+                              }
+                            , gameSceneCmds
+                            )
+
+                        _ ->
+                            ( { model | scene = Game newGameSceneModel }, gameSceneCmds )
+
+                Game.InProgress ->
                     ( { model | scene = Game newGameSceneModel }, gameSceneCmds )
 
         ( Game _, _ ) ->
@@ -207,6 +228,12 @@ update msg model =
         ( HighScores _, _ ) ->
             noop
 
+        ( GameOver _, OpenChooseVariantScene ) ->
+            ( { model | scene = ChooseVariant }, Cmd.none )
+
+        ( GameOver _, _ ) ->
+            noop
+
 
 intSeedGenerator : Random.Generator Int
 intSeedGenerator =
@@ -230,3 +257,6 @@ view model =
 
         HighScores sceneModel ->
             Html.map HighScoresSceneMsg <| Scene.HighScores.view model.gameResults sceneModel
+
+        GameOver sceneModel ->
+            Scene.GameOver.view { playAgainMsg = OpenChooseVariantScene } sceneModel

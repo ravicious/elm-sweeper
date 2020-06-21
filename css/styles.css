@@ -182,8 +182,9 @@ body {
   list-style: none;
 
   display: grid;
-  grid-template-columns: 5ch auto 4ch;
-  column-gap: var(--s-2);
+  /* minmax handles a case where the parent's width doesn't allow us to reach 21ch, like in the High
+   * Scores scene. */
+  grid-template-columns: 5ch minmax(auto, 21ch) 4ch;
 
   word-break: break-word;
 }
@@ -192,8 +193,17 @@ body {
   display: contents;
 }
 
+.result--current > * {
+  background-color: blanchedalmond;
+}
+
 .result__place {
   text-align: right;
+}
+
+.result__name {
+  padding-left: var(--s-2);
+  padding-right: var(--s-2);
 }
 
 .results input {
@@ -203,15 +213,17 @@ body {
 
 /* Effects */
 
-body.shaking {
-  overflow: hidden;
-}
+@media (prefers-reduced-motion: no-preference) {
+  body.shaking {
+    overflow: hidden;
+  }
 
-body.shaking .grid {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
+  body.shaking .grid {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
 }
 
 @keyframes shake {
