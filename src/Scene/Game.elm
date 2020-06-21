@@ -33,14 +33,13 @@ type alias Model =
     , touchNeighbours : Bool
     , startedAt : Maybe Time.Posix
     , endedAt : Maybe Time.Posix
-    , timeNow : Maybe Time.Posix
+    , timeNow : Time.Posix
     }
 
 
 type Msg
     = ClickCell Board.CellIndex
     | KeyEventReceived KeyEvent
-    | StartTimer Time.Posix
     | UpdateTimeNow Time.Posix
 
 
@@ -56,11 +55,12 @@ type KeyDirection
 type alias Flags =
     { intSeed : Int
     , variantIdentifier : Game.Variant.Identifier
+    , timeNow : Time.Posix
     }
 
 
 init : Flags -> ( Model, Cmd Msg )
-init { intSeed, variantIdentifier } =
+init { intSeed, variantIdentifier, timeNow } =
     let
         seed =
             Random.initialSeed intSeed
@@ -70,7 +70,7 @@ init { intSeed, variantIdentifier } =
       , touchNeighbours = False
       , startedAt = Nothing
       , endedAt = Nothing
-      , timeNow = Nothing
+      , timeNow = timeNow
       }
     , Cmd.none
     )
@@ -97,7 +97,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     let
         timerSubscription =
-            if Maybe.Extra.isJust model.startedAt && Game.isInProgress model.game then
+            if Game.isInProgress model.game then
                 Time.every 1000 UpdateTimeNow
 
             else
@@ -130,6 +130,14 @@ update msg model =
                 ( updatedGame, emittedEvents ) =
                     Game.update (action index) model.game
 
+                updatedStartedAt =
+                    case model.startedAt of
+                        Just _ ->
+                            model.startedAt
+
+                        Nothing ->
+                            Just model.timeNow
+
                 updatedEndedAt =
                     case model.endedAt of
                         Just _ ->
@@ -137,28 +145,20 @@ update msg model =
 
                         Nothing ->
                             if Game.hasEnded updatedGame then
-                                -- Use `startedAt` in case the game ends after the first click,
-                                -- `timeNow` would be `Nothing` at in that scenario.
-                                Maybe.Extra.orList [ model.timeNow, model.startedAt ]
+                                Just model.timeNow
 
                             else
                                 Nothing
 
                 newModel =
-                    { model | game = updatedGame, endedAt = updatedEndedAt }
-
-                startTimerCmd =
-                    if Maybe.Extra.isNothing model.startedAt then
-                        Task.perform StartTimer Time.now
-
-                    else
-                        Cmd.none
+                    { model
+                        | game = updatedGame
+                        , startedAt = updatedStartedAt
+                        , endedAt = updatedEndedAt
+                    }
             in
             ( newModel
-            , Cmd.batch
-                [ emitGameEvents <| List.map Game.Event.toString emittedEvents
-                , startTimerCmd
-                ]
+            , emitGameEvents <| List.map Game.Event.toString emittedEvents
             )
 
         KeyEventReceived keyEvent ->
@@ -188,11 +188,8 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        StartTimer time ->
-            ( { model | startedAt = Just time }, Cmd.none )
-
         UpdateTimeNow time ->
-            ( { model | timeNow = Just time }, Cmd.none )
+            ( { model | timeNow = time }, Cmd.none )
 
 
 updateTouchNeighbours : KeyDirection -> Model -> ( Model, Cmd Msg )
@@ -257,7 +254,7 @@ view model =
                 ( Just startedAt, Just endedAt, _ ) ->
                     { startedAt = startedAt, endedAt = endedAt }
 
-                ( Just startedAt, Nothing, Just timeNow ) ->
+                ( Just startedAt, Nothing, timeNow ) ->
                     { startedAt = startedAt, endedAt = timeNow }
 
                 _ ->
