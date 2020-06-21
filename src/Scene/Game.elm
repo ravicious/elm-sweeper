@@ -98,7 +98,7 @@ subscriptions model =
     let
         timerSubscription =
             if Game.isInProgress model.game then
-                Time.every 1000 UpdateTimeNow
+                Time.every 500 UpdateTimeNow
 
             else
                 Sub.none
