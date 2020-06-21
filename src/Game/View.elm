@@ -10,6 +10,7 @@ import Game.Variant as Variant
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Lazy
 import Maybe.Extra
 import Time
 
@@ -45,8 +46,18 @@ view options game =
 
                             Nothing ->
                                 text ""
-                        , div [ id "grid", class "grid" ] <|
-                            viewCells { onClickMsg = options.onCellClickMsg } game
+                        , case options.onCellClickMsg of
+                            -- Usually we'd pass `options.onCellClickMsg` to `viewCells` directly.
+                            -- However, because it's of Maybe type, it doesn't play well with
+                            -- Html.Lazy.
+                            --
+                            -- To work around this, we do a case here and then call two different
+                            -- functions.
+                            Just onCellClickMsg ->
+                                Html.Lazy.lazy2 viewCellsWithOnClick onCellClickMsg game
+
+                            Nothing ->
+                                Html.Lazy.lazy viewCellsWithoutOnClick game
                         ]
                   ]
                 , options.statusBarOptions
@@ -78,8 +89,18 @@ viewGameDuration startedAt endedAt =
         ]
 
 
-viewCells : { onClickMsg : Maybe (Int -> msg) } -> Game.State -> List (Html.Html msg)
-viewCells options game =
+viewCellsWithOnClick : (Int -> msg) -> Game.State -> Html msg
+viewCellsWithOnClick onClickMsg =
+    viewCells (onClickMsg >> onClick)
+
+
+viewCellsWithoutOnClick : Game.State -> Html msg
+viewCellsWithoutOnClick =
+    viewCells (always <| classList [])
+
+
+viewCells : (Int -> Html.Attribute msg) -> Game.State -> Html msg
+viewCells onCellClickMsg game =
     game
         |> Game.listCells
             (\( index, cell ) ->
@@ -106,15 +127,11 @@ viewCells options game =
                         , ( "is-not-touchable", not <| Cell.isTouchable cell )
                         ]
                     , attribute "data-index" (String.fromInt index)
-                    , case options.onClickMsg of
-                        Nothing ->
-                            classList []
-
-                        Just onClickMsg ->
-                            onClick (onClickMsg index)
+                    , onCellClickMsg index
                     ]
                     [ viewContent content ]
             )
+        |> div [ id "grid", class "grid" ]
 
 
 viewContent : Content.Content -> Html msg
@@ -142,7 +159,7 @@ viewStatusBar game options =
     [ div [ class "cluster bar" ]
         [ div [ style "align-items" "flex-start", style "justify-content" "space-evenly" ]
             [ viewStatus options.duration game
-            , viewMonsterSummary (Game.toMonsterSummary game)
+            , Html.Lazy.lazy viewMonsterSummary game
             ]
         ]
     , span [ class "seed" ] [ text <| "Seed: " ++ String.fromInt options.intSeed ]
@@ -187,12 +204,13 @@ minSpanWidth s =
     [ style "display" "inline-block", style "min-width" s ]
 
 
-viewMonsterSummary : Board.MonsterSummary -> Html msg
-viewMonsterSummary monsterSummary =
+viewMonsterSummary : Game.State -> Html msg
+viewMonsterSummary game =
     div [ class "cluster" ]
         [ ul [ class "monster-summary", style "justify-content" "center" ]
-            (Dict.toList
-                monsterSummary
+            (game
+                |> Game.toMonsterSummary
+                |> Dict.toList
                 |> List.map
                     (\( power, count ) ->
                         li [ class "monster-summary-item" ]

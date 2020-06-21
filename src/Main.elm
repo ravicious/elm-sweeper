@@ -16,6 +16,8 @@ import Scene.Game
 import Scene.GameOver
 import Scene.GameWon
 import Scene.HighScores
+import Task
+import Time
 
 
 main : Program Flags Model Msg
@@ -51,6 +53,7 @@ type Scene
 
 type Msg
     = InitializeGame Game.Variant.Identifier
+    | InitializeGameWithTime Game.Variant.Identifier Time.Posix
     | GameSceneMsg Scene.Game.Msg
     | GameWonSceneMsg Scene.GameWon.Msg
     | GameResultsReceived Decode.Value
@@ -129,12 +132,19 @@ update msg model =
             ( { model | gameResults = gameResults, scene = newSceneModel }, sceneCmds )
 
         ( ChooseVariant, InitializeGame variantIdentifier ) ->
+            ( model, Task.perform (InitializeGameWithTime variantIdentifier) Time.now )
+
+        ( ChooseVariant, InitializeGameWithTime variantIdentifier time ) ->
             let
                 ( intSeed, nextSeed ) =
                     Random.step intSeedGenerator model.seed
 
                 ( sceneModel, sceneCmd ) =
-                    Scene.Game.init { intSeed = intSeed, variantIdentifier = variantIdentifier }
+                    Scene.Game.init
+                        { intSeed = intSeed
+                        , variantIdentifier = variantIdentifier
+                        , timeNow = time
+                        }
             in
             ( { model
                 | scene = Game sceneModel
