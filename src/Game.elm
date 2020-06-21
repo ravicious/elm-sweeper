@@ -140,7 +140,7 @@ listCells f state =
 endGameIfPlayerIsDeadOrMonstersAreKilled : State -> State
 endGameIfPlayerIsDeadOrMonstersAreKilled state =
     if Player.isDead state.player then
-        { state | status = Lost, board = Board.revealAllCells state.board }
+        { state | status = Lost, board = Board.revealAllCells Cell.RevealedByGameOver state.board }
 
     else
         let
@@ -153,7 +153,9 @@ endGameIfPlayerIsDeadOrMonstersAreKilled state =
                     |> List.all ((==) 0)
         in
         if areAllMonstersKilled then
-            { state | status = Won, board = Board.revealAllCells state.board }
+            -- The RevealedBy value here doesn't matter at this point, as all monsters were already
+            -- killed by the player and the value isn't used for other types of cells.
+            { state | status = Won, board = Board.revealAllCells Cell.RevealedByPlayer state.board }
 
         else
             state

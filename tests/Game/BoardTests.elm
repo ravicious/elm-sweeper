@@ -64,7 +64,31 @@ toMonsterSummaryTests =
                             |> Board.toMonsterSummary
                 in
                 Expect.equal expected actual
-        , test "includes a power level even if all monsters of that level have been revealed" <|
+        , test "counts monsters revealed by the player" <|
+            \() ->
+                let
+                    expected =
+                        Dict.fromList [ ( 1, 0 ) ]
+
+                    actual =
+                        Board.init oneByOneVariant (Random.initialSeed 0)
+                            |> Board.revealCell Cell.RevealedByPlayer 0
+                            |> Board.toMonsterSummary
+                in
+                Expect.equal expected actual
+        , test "doesn't count monsters revealed by game over" <|
+            \() ->
+                let
+                    expected =
+                        Dict.fromList [ ( 1, 1 ) ]
+
+                    actual =
+                        Board.init oneByOneVariant (Random.initialSeed 0)
+                            |> Board.revealCell Cell.RevealedByGameOver 0
+                            |> Board.toMonsterSummary
+                in
+                Expect.equal expected actual
+        , test "includes a power level even if all monsters of that level have been beaten" <|
             \() ->
                 let
                     expected =
